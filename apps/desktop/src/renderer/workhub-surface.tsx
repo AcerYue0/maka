@@ -614,7 +614,7 @@ function SubmittedWorkView(props: {
 }
 
 function workHubCopy(locale: UiLocale) {
-  if (locale !== 'en') {
+  if (locale === 'zh-CN') {
     return {
       locale,
       subtitle: '在一个入口里继续、创建和查看普通 Session',
@@ -646,6 +646,37 @@ function workHubCopy(locale: UiLocale) {
       }, scrollToBottom: '滚动到底部', archived: '已归档',
       states: { active: '活跃', running: '进行中', waiting_for_user: '等待你', blocked: '受阻', aborted: '已中止' },
       turnStates: { running: '进行中', completed: '已完成', aborted: '已中止', failed: '失败' },
+    } as const;
+  }
+  if (locale === 'zh-TW') {
+    return {
+      locale,
+      subtitle: '在一個入口繼續、建立和檢視一般 Session',
+      emptyTitle: '從這裡繼續所有工作',
+      emptyBody: (count: number) => count > 0
+        ? `WorkHub 會根據現有 ${count} 個 Session 判斷目標；不確定時會先詢問你。`
+        : '提出一個明確目標，WorkHub 會建立一般 Session 並將結果帶回這裡。',
+      workCount: (count: number) => `${count} 項工作`, clarification: '選擇工作',
+      chooseWork: '這則輸入可能與多項工作有關，請選擇目標：',
+      discussionStayed: '這則內容暫時保留在 WorkHub，沒有建立或變更 Session。',
+      discussionHint: '提出明確的執行目標後，我會將它交給對應的 Session。',
+      answering: '正在回答…',
+      choseWork: (name: string) => `選擇「${name}」`,
+      correctedWork: (name: string) => `將目標更正為「${name}」`,
+      sentTo: '已交給：', accepted: '已接收', sessionFallback: '一般 Session',
+      correctTarget: '更正目標',
+      correctedFrom: (name: string) => `已從「${name}」更正`,
+      waitingForDecision: '這項工作正在等待你的決定。',
+      requestNotSent: '新請求尚未傳送；處理原 Session 中的互動後可以再次傳送。',
+      routing: '正在判斷應該交給哪個 Session…', loadFailed: '無法讀取現有工作。',
+      loading: '正在讀取現有工作…',
+      preparing: '正在準備 WorkHub…', unavailable: '暫時無法使用',
+      coordinationFailedTitle: 'WorkHub 暫時無法啟動',
+      coordinationFailedBody: '請檢查目前 Runtime Host 的預設模型設定，然後重試。',
+      retry: '重試',
+      submitFailed: '輸入未能送達，請重試。', scrollToBottom: '捲動到底部', archived: '已封存',
+      states: { active: '使用中', running: '進行中', waiting_for_user: '等待你', blocked: '受阻', aborted: '已中止' },
+      turnStates: { running: '進行中', completed: '已完成', aborted: '已中止', failed: '失敗' },
     } as const;
   }
   return {

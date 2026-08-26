@@ -23,6 +23,8 @@ import { describe, test } from 'node:test';
 import {
   generalizedErrorMessage,
   generalizedErrorMessageChinese,
+  generalizedErrorMessageForLocale,
+  generalizedErrorMessageTraditionalChinese,
   redactSecrets,
 } from '../redaction.js';
 
@@ -364,6 +366,31 @@ describe('generalizedErrorMessageChinese', () => {
         '无法基于该上下文创建新会话。',
       ),
       '无法基于该上下文创建新会话。',
+    );
+  });
+});
+
+describe('localized generalized error messages', () => {
+  test('uses Taiwan terminology for Traditional Chinese categories', () => {
+    for (const [raw, expected] of [
+      ['Request timeout after 30s', '請求逾時'],
+      ['HTTP 429 Too Many Requests', '已達模型速率限制'],
+      ['401 Unauthorized', '驗證失敗'],
+      ['HTTP 500 Internal Server Error', '模型服務傳回錯誤'],
+      ['network unreachable', '網路錯誤'],
+      ['something weird happened', '操作失敗'],
+    ]) {
+      assert.equal(generalizedErrorMessageTraditionalChinese(new Error(raw)), expected);
+    }
+  });
+
+  test('routes each resolved locale without changing the supplied fallback', () => {
+    const error = new Error('something weird happened');
+    assert.equal(generalizedErrorMessageForLocale(error, '简中后备', 'zh-CN'), '简中后备');
+    assert.equal(generalizedErrorMessageForLocale(error, '繁中備援', 'zh-TW'), '繁中備援');
+    assert.equal(
+      generalizedErrorMessageForLocale(error, 'English fallback', 'en'),
+      'English fallback',
     );
   });
 });

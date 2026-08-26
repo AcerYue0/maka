@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { generalizedErrorMessage, generalizedErrorMessageChinese } from '@maka/core/redaction';
+import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
 import { type Task } from '@maka/core/task-ledger';
 import { useUiLocale } from '@maka/ui';
 import { getShellRemainingCopy } from '../../../../locales/shell-remaining-copy.js';
@@ -61,9 +61,7 @@ export function useSessionTasks(sessionId: string | undefined): SessionTaskSnaps
           sessionId: targetSessionId,
           tasks: current.sessionId === targetSessionId ? current.tasks : [],
           loading: false,
-          error: locale !== 'en'
-            ? generalizedErrorMessageChinese(error, copy.loadFailed)
-            : generalizedErrorMessage(error, copy.loadFailed),
+          error: generalizedErrorMessageForLocale(error, copy.loadFailed, locale),
         }));
       },
     );

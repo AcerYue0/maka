@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { generalizedErrorMessage, generalizedErrorMessageChinese } from '@maka/core/redaction';
+import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
 
 import { type UiCatalog, type UiLocale } from '@maka/core/ui-locale';
 
@@ -2367,5 +2367,5 @@ export function getShellCopy(locale: UiLocale): ShellCopy {
 }
 
 export function localizedShellErrorMessage(error: unknown, fallback: string, locale: UiLocale): string {
-  return locale !== 'en' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
+  return generalizedErrorMessageForLocale(error, fallback, locale);
 }

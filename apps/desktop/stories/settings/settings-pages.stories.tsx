@@ -1986,7 +1986,7 @@ export const UsageLongTail: Story = {
     const usageCopy = getUsageSettingsCopy(
       globals.locale === 'en' ? 'en' : globals.locale === 'zh-TW' ? 'zh-TW' : 'zh-CN',
     );
-    expect(
+      expect(
       await canvas.findByText(usageCopy.totalRequests, {
         selector: '[data-slot="stat-tile-label"]',
       }),

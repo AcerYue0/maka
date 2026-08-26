@@ -20,6 +20,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getSettingsPreferencesCopy } from '../../renderer/locales/settings-preferences-copy.js';
+import { getMcpCatalog } from '../../renderer/mcp-catalog.js';
 
 test('language selector offers every preference with locale-appropriate labels', () => {
   assert.deepEqual(getSettingsPreferencesCopy('zh-CN').personalization.localeOptions, [
@@ -48,4 +49,11 @@ test('Traditional Chinese settings copy uses Taiwan terminology', () => {
   assert.equal(copy.appearance.paletteLabels.default, '預設');
   assert.equal(copy.appearance.appIconImport, '匯入圖示…');
   assert.equal(copy.about.clipboardUnavailable, '剪貼簿不可用或被系統拒絕。');
+});
+
+test('Traditional Chinese MCP catalog does not fall back to Simplified Chinese', () => {
+  const catalog = getMcpCatalog('zh-TW');
+  assert.equal(catalog.find((entry) => entry.id === 'filesystem')?.name, '本機檔案');
+  assert.equal(catalog.find((entry) => entry.id === 'google-calendar')?.name, 'Google 日曆');
+  assert.equal(catalog.find((entry) => entry.id === 'playwright')?.category, '設計與開發');
 });

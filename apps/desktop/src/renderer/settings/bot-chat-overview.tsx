@@ -157,7 +157,7 @@ function botOverviewDetail(
       </>
     );
   }
-  if (currentError) return locale !== 'en' ? currentError : fallback;
+  if (currentError) return locale === 'zh-CN' ? currentError : fallback;
   if (status?.reason) return botStatusDetail(status, locale);
   return fallback;
 }

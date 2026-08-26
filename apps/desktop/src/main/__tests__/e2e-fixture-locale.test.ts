@@ -17,10 +17,30 @@
  * under the License.
  */
 
-import type { UiLocale } from '@maka/core/ui-locale';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { resolveE2eFixture } from '../e2e-fixture.js';
 
-export function projectPickerTitle(locale: UiLocale): string {
-  if (locale === 'zh-CN') return '添加项目';
-  if (locale === 'zh-TW') return '新增專案';
-  return 'Add project';
-}
+test('preserves both canonical Chinese locale fixture flags', () => {
+  for (const locale of ['zh-CN', 'zh-TW', 'en'] as const) {
+    const fixture = resolveE2eFixture(
+      'settings-general',
+      false,
+      undefined,
+      undefined,
+      locale,
+    );
+    assert.equal(fixture?.locale, locale);
+  }
+});
+
+test('normalizes locale fixture flag casing without widening the contract', () => {
+  assert.equal(
+    resolveE2eFixture('settings-general', false, undefined, undefined, 'ZH-tw')?.locale,
+    'zh-TW',
+  );
+  assert.equal(
+    resolveE2eFixture('settings-general', false, undefined, undefined, 'zh-Hant')?.locale,
+    null,
+  );
+});

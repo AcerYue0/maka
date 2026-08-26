@@ -53,6 +53,11 @@ it('recognizes terminal kinds and keeps distinct localized fallback copy', () =>
   assert.ok(completed.title && completed.body);
   assert.ok(errored.title && errored.body);
   assert.notEqual(completed.title, errored.title);
+
+  assert.deepEqual(runNotificationCopy('completed', 'zh-TW'), {
+    title: '回答已產生',
+    body: 'Maka 已完成本次回答，按一下以檢視。',
+  });
 });
 
 it('sanitizes renderer content, caps it, and falls back per field', () => {

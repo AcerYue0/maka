@@ -17,10 +17,14 @@
  * under the License.
  */
 
-import type { UiLocale } from '@maka/core/ui-locale';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { getStartupRecoveryCopy } from '../runtime-host-boot-copy.js';
 
-export function projectPickerTitle(locale: UiLocale): string {
-  if (locale === 'zh-CN') return '添加项目';
-  if (locale === 'zh-TW') return '新增專案';
-  return 'Add project';
-}
+test('startup recovery copy preserves Traditional Chinese', () => {
+  const copy = getStartupRecoveryCopy('zh-TW');
+  assert.equal(copy.storageRoot.title, 'Maka 工作區需要修復');
+  assert.match(copy.storageRoot.detail('C:\\Maka'), /磁碟識別碼/);
+  assert.equal(copy.runtimeHost.title, '預設 Runtime Host 無法連線');
+  assert.match(copy.runtimeHost.detail('失敗'), /設定中處理/);
+});

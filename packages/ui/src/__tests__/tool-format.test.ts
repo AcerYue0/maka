@@ -17,10 +17,19 @@
  * under the License.
  */
 
-import type { UiLocale } from '@maka/core/ui-locale';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { describeLoadToolResult } from '../tool-format.js';
 
-export function projectPickerTitle(locale: UiLocale): string {
-  if (locale === 'zh-CN') return '添加项目';
-  if (locale === 'zh-TW') return '新增專案';
-  return 'Add project';
-}
+test('custom load-tool groups use Traditional Chinese action copy', () => {
+  const result = describeLoadToolResult(
+    { group: 'custom' },
+    {
+      activated: ['custom_tool'],
+      group: { id: 'custom', label: '自訂工具', description: '專案工具' },
+    },
+    'zh-TW',
+  );
+  assert.equal(result?.actionLabel, '啟用 自訂工具');
+  assert.equal(result?.title, '自訂工具 已啟用');
+});

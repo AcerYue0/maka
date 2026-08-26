@@ -17,6 +17,8 @@
  * under the License.
  */
 
+import type { UiLocale } from './ui-locale.js';
+
 const SENSITIVE_KEY_SUFFIXES = new Set([
   'auth',
   'authorization',
@@ -255,6 +257,38 @@ export function generalizedErrorMessageChinese(error: unknown, fallback = '操�
   )
     return '网络错误';
   return fallback;
+}
+
+export function generalizedErrorMessageTraditionalChinese(
+  error: unknown,
+  fallback = '操作失敗',
+): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const redacted = redactSecrets(message);
+  const lower = redacted.toLowerCase();
+  if (lower.includes('timeout')) return '請求逾時';
+  if (lower.includes('429') || lower.includes('rate')) return '已達模型速率限制';
+  if (lower.includes('401') || lower.includes('403') || isAuthenticationErrorText(lower))
+    return '驗證失敗';
+  if (lower.includes('5') && /\b5\d\d\b/.test(lower)) return '模型服務傳回錯誤';
+  if (
+    lower.includes('network') ||
+    lower.includes('fetch') ||
+    lower.includes('econn') ||
+    lower.includes('enotfound')
+  )
+    return '網路錯誤';
+  return fallback;
+}
+
+export function generalizedErrorMessageForLocale(
+  error: unknown,
+  fallback: string,
+  locale: UiLocale,
+): string {
+  if (locale === 'zh-CN') return generalizedErrorMessageChinese(error, fallback);
+  if (locale === 'zh-TW') return generalizedErrorMessageTraditionalChinese(error, fallback);
+  return generalizedErrorMessage(error, fallback);
 }
 
 export function isAuthenticationErrorText(message: string): boolean {

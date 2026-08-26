@@ -17,10 +17,17 @@
  * under the License.
  */
 
-import type { UiLocale } from '@maka/core/ui-locale';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { subscriptionResultMessage } from '../../renderer/settings/subscription-result-message.js';
 
-export function projectPickerTitle(locale: UiLocale): string {
-  if (locale === 'zh-CN') return '添加项目';
-  if (locale === 'zh-TW') return '新增專案';
-  return 'Add project';
-}
+test('Traditional Chinese subscription errors reject raw Simplified backend copy', () => {
+  assert.equal(
+    subscriptionResultMessage('GitHub Copilot 登录已过期。', '請重新登入。', 'zh-TW'),
+    '請重新登入。',
+  );
+  assert.equal(
+    subscriptionResultMessage('network unreachable', '請重新登入。', 'zh-TW'),
+    '網路錯誤',
+  );
+});

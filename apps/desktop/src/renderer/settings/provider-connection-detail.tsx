@@ -63,6 +63,7 @@ import {
   useRuntimeHostSettingsTarget,
 } from './runtime-host-settings-target.js';
 import { useOAuthLoginFlow } from './use-oauth-login-flow';
+import { subscriptionResultMessage } from './subscription-result-message.js';
 import {
   providerPanelActionErrorMessage,
   type CredentialPresenceStatus,
@@ -1051,7 +1052,10 @@ function GitHubCopilotReloginNoticeForCurrentGeneration(props: {
       // refresh, the connection detail now owned by the replacement Host.
       if (!mountedRef.current) return;
       if (!result.ok) {
-        reportHostError(copy.copilotImportFailed, result.message);
+        reportHostError(
+          copy.copilotImportFailed,
+          subscriptionResultMessage(result.message, copy.copilotImportFailed, locale),
+        );
         return;
       }
       await props.onRelogin();

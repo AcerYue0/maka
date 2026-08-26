@@ -31,10 +31,10 @@ import { getProviderSettingsCopy, type ProviderSettingsCopy } from '../locales/s
 import {
   useOAuthLoginFlow,
   subscriptionActionErrorMessage,
-  subscriptionResultMessage,
   type OAuthLoginFlowBridge,
   type SubscriptionSnapshot,
 } from './use-oauth-login-flow';
+import { subscriptionResultMessage } from './subscription-result-message.js';
 import {
   RuntimeHostSettingsGenerationBoundary,
   useRuntimeHostSettingsGenerationKey,
@@ -276,7 +276,8 @@ function SubscriptionLoginPanel(props: {
 
 function GitHubCopilotLoginPanel(props: { onLoginSuccess(): void | Promise<void> }) {
   const host = useRuntimeHostSettingsTarget();
-  const copy = getProviderSettingsCopy(useUiLocale()).oauthSection;
+  const locale = useUiLocale();
+  const copy = getProviderSettingsCopy(locale).oauthSection;
   // The shared login-flow controller owns the snapshot refresh, the
   // synchronous one-shot pending guard, and the unmount safety; Copilot
   // rides it through the direct account flow (one bridge call per action,
@@ -302,7 +303,13 @@ function GitHubCopilotLoginPanel(props: { onLoginSuccess(): void | Promise<void>
         {loggedIn
           ? copy.copilotImported
           : flow.state?.runtimeState === 'refresh_failed' || flow.state?.runtimeState === 'storage_failed'
-            ? flow.state.errorMessage
+            ? subscriptionResultMessage(
+                flow.state.errorMessage,
+                flow.state.runtimeState === 'refresh_failed'
+                  ? copy.refreshTokenFailed
+                  : copy.storageFailed('GitHub Copilot'),
+                locale,
+              )
             : copy.copilotSetup}
       </Text>
       <HStack gap={2} hAlign="end">

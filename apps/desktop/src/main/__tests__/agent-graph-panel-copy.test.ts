@@ -17,10 +17,14 @@
  * under the License.
  */
 
-import type { UiLocale } from '@maka/core/ui-locale';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { getAgentGraphPanelCopy } from '../../renderer/agent-graph-panel.js';
 
-export function projectPickerTitle(locale: UiLocale): string {
-  if (locale === 'zh-CN') return '添加项目';
-  if (locale === 'zh-TW') return '新增專案';
-  return 'Add project';
-}
+test('Traditional Chinese Agent Graph copy does not use Simplified fallbacks', () => {
+  const copy = getAgentGraphPanelCopy('zh-TW');
+  assert.equal(copy.loading, '正在讀取 Graph 狀態…');
+  assert.equal(copy.openSession, '開啟子任務');
+  assert.equal(copy.currentEpoch, '目前');
+  assert.equal(copy.status('active'), '執行中');
+});

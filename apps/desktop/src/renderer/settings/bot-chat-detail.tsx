@@ -305,7 +305,7 @@ export function BotChatChannelDetail(props: {
           title={detailCopy.latestFailure}
           description={(
             <span className="settingsBotBannerDescription">
-              {locale !== 'en' ? viewState.currentError : detailCopy.latestFailureDetail}
+              {locale === 'zh-CN' ? viewState.currentError : detailCopy.latestFailureDetail}
             </span>
           )} />
       )}
@@ -415,7 +415,7 @@ export function BotChatChannelDetail(props: {
             if (snapshot.warning) {
               toast.warning(
                 detailCopy.credentialsSaved(providerPresentation.label),
-                locale !== 'en' ? snapshot.warning : detailCopy.savedButNotConnected,
+                locale === 'zh-CN' ? snapshot.warning : detailCopy.savedButNotConnected,
               );
               return;
             }
