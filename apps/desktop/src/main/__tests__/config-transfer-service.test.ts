@@ -100,6 +100,27 @@ describe('config-transfer-service', () => {
     assert.deepEqual(writtenMemory, ['# imported memory']);
   });
 
+  it('canonicalizes a legacy zh preference before the imported settings reach observers', async () => {
+    const { deps, updatedSettings } = makeDeps();
+    const bundle = {
+      schemaVersion: 1,
+      exportedAt: '',
+      appVersion: '0.1.0',
+      includedData: ['settings'] as const,
+      data: {
+        settings: {
+          personalization: { uiLocale: 'zh', displayName: 'Maka user' },
+        },
+      },
+    };
+
+    await applyConfigImport(bundle as any, 'skip', deps);
+
+    assert.deepEqual(updatedSettings, [
+      { personalization: { uiLocale: 'zh-CN', displayName: 'Maka user' } },
+    ]);
+  });
+
   it('restores the selection a backup states instead of re-enabling its default', async () => {
     // A backup can hold a connection whose default model the user had disabled.
     // `save()` cannot tell a stated selection from one a sync echoed back, so it

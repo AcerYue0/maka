@@ -22,6 +22,7 @@ import { expect } from './test-helpers.js';
 import {
   isUiLocale,
   isUiLocalePreference,
+  normalizeUiLocalePreference,
   resolveSystemUiLocale,
   resolveUiLocale,
   uiLocaleToIntlLocale,
@@ -32,6 +33,12 @@ describe('UI locale', () => {
     expect(['zh-CN', 'zh-TW', 'en'].every(isUiLocale)).toBe(true);
     expect(isUiLocale('zh')).toBe(false);
     expect(['auto', 'zh-CN', 'zh-TW', 'en'].every(isUiLocalePreference)).toBe(true);
+  });
+
+  test('normalizes the legacy persisted preference without widening the locale contract', () => {
+    expect(normalizeUiLocalePreference('zh')).toBe('zh-CN');
+    expect(normalizeUiLocalePreference('zh-TW')).toBe('zh-TW');
+    expect(normalizeUiLocalePreference('unsupported')).toBe('auto');
   });
 
   for (const [languages, expected] of [

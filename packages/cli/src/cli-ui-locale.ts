@@ -33,9 +33,9 @@ export type CliUiLocaleResolution =
 /** Resolve the interactive TUI locale without changing the top-level CLI grammar. */
 export function resolveCliUiLocale(environment: CliEnvironment): CliUiLocaleResolution {
   const rawPreference = environment.MAKA_LOCALE?.trim();
-  const normalizedPreference = rawPreference?.toLowerCase();
+  const normalizedPreference = rawPreference?.replaceAll('_', '-').toLowerCase();
   const preference =
-    normalizedPreference === 'zh-cn'
+    normalizedPreference === 'zh' || normalizedPreference === 'zh-cn'
       ? 'zh-CN'
       : normalizedPreference === 'zh-tw'
         ? 'zh-TW'

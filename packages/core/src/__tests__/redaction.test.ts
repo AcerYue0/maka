@@ -371,6 +371,16 @@ describe('generalizedErrorMessageChinese', () => {
 });
 
 describe('localized generalized error messages', () => {
+  test('routes one shared classification through each locale catalog', () => {
+    const error = new Error('HTTP 503 from provider');
+    assert.equal(
+      generalizedErrorMessageForLocale(error, 'fallback', 'en'),
+      'Provider returned an error',
+    );
+    assert.equal(generalizedErrorMessageForLocale(error, '後備', 'zh-CN'), '模型服务返回错误');
+    assert.equal(generalizedErrorMessageForLocale(error, '備援', 'zh-TW'), '模型服務傳回錯誤');
+  });
+
   test('uses Taiwan terminology for Traditional Chinese categories', () => {
     for (const [raw, expected] of [
       ['Request timeout after 30s', '請求逾時'],

@@ -215,7 +215,7 @@ const SCHEDULED_TASK_COPY = {
     validation: { title: '填寫標題後才能儲存提醒。', timeInvalid: '選擇有效的提醒時間。', timePast: '提醒時間必須晚於目前時間。', cron: 'Cron 需要 5 段表示式，例如 0 9 * * 1-5。', chatId: '選擇機器人聊天時需要填寫 Chat ID。' },
     status: { active: '待觸發', paused: '已暫停', completed: '已完成', expired: '已過期' },
     duplicateSuffix: ' 副本',
-    countdown: { overdue: '已過期', soon: '馬上', minutes: (count) => `${count} 分鐘後`, hours: (count) => `${count} 小時後`, tomorrow: '明天', days: (count) => `${count} 天后`, weeks: (count) => `${count} 周後`, months: (count) => `${count} 個月後` },
+    countdown: { overdue: '已過期', soon: '馬上', minutes: (count) => `${count} 分鐘後`, hours: (count) => `${count} 小時後`, tomorrow: '明天', days: (count) => `${count} 天後`, weeks: (count) => `${count} 週後`, months: (count) => `${count} 個月後` },
     recurrence: { once: '一次性提醒', cron: (expression) => `Cron：${expression}`, recurring: { daily: '每天', weekly: '每週', monthly: '每月' }, interval: (seconds) => `每 ${seconds} 秒` },
     runStatus: { ok: '已觸發', blocked: '已阻止', failed: '失敗' },
     delivery: { local: '本地提醒', bot: (provider, chatId) => `${provider} · ${chatId}`, fallback: (target) => `觸發後投遞到：${target}` },

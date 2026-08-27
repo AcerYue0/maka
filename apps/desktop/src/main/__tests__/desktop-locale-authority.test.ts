@@ -104,3 +104,18 @@ test('falls back to its current projection when settings cannot be read', async 
   });
   assert.equal(await authority.resolve(), 'zh-CN');
 });
+
+test('never projects the legacy zh preference into native copy lookups', async () => {
+  const legacy = mergeSettings(createDefaultSettings(), {
+    personalization: { uiLocale: 'zh-CN' },
+  });
+  (legacy.personalization as { uiLocale: string }).uiLocale = 'zh';
+  const authority = createDesktopLocaleAuthority({
+    readSettings: async () => legacy,
+    preferredSystemLanguages: () => ['en-US'],
+  });
+
+  assert.equal(authority.observe(legacy), 'zh-CN');
+  assert.equal(authority.current(), 'zh-CN');
+  assert.equal(await authority.resolve(), 'zh-CN');
+});

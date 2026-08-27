@@ -37,6 +37,21 @@ describe('CLI TUI locale authority', () => {
     });
   });
 
+  test('preserves legacy and POSIX-style Chinese aliases', () => {
+    assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: 'zh' }), {
+      ok: true,
+      locale: 'zh-CN',
+    });
+    assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: 'zh_CN' }), {
+      ok: true,
+      locale: 'zh-CN',
+    });
+    assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: 'zh_TW' }), {
+      ok: true,
+      locale: 'zh-TW',
+    });
+  });
+
   test('auto honors POSIX locale authority order', () => {
     assert.deepEqual(
       resolveCliUiLocale({

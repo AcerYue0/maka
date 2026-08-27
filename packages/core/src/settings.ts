@@ -40,6 +40,7 @@ import type { UsageProvenance } from './usage-ledger-merge.js';
 import {
   UI_LOCALE_PREFERENCES,
   isUiLocalePreference,
+  normalizeUiLocalePreference,
   type UiLocalePreference,
 } from './ui-locale.js';
 import { normalizeSubagentSettings, type SubagentSettings } from './subagent-settings.js';
@@ -882,12 +883,7 @@ export function normalizeSettings(input: unknown): AppSettings {
     // 'auto' on any other miss.
     personalization: {
       ...base.personalization,
-      uiLocale:
-        (base.personalization.uiLocale as unknown) === 'zh'
-          ? 'zh-CN'
-          : isUiLocalePreference(base.personalization.uiLocale)
-            ? base.personalization.uiLocale
-            : 'auto',
+      uiLocale: normalizeUiLocalePreference(base.personalization.uiLocale),
       selectedPetId: normalizeSelectedPetId(base.personalization.selectedPetId),
     },
     botChat: normalizeBotChatSettings(base.botChat, value.botChat),

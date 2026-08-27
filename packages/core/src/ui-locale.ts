@@ -38,6 +38,12 @@ export function isUiLocalePreference(value: unknown): value is UiLocalePreferenc
   return value === 'auto' || isUiLocale(value);
 }
 
+/** Decode persisted or externally supplied preferences into the closed locale vocabulary. */
+export function normalizeUiLocalePreference(value: unknown): UiLocalePreference {
+  if (value === 'zh') return 'zh-CN';
+  return isUiLocalePreference(value) ? value : 'auto';
+}
+
 /** Resolve the first supported language in the operating system preference list. */
 export function resolveSystemUiLocale(languages: readonly string[] | null | undefined): UiLocale {
   for (const language of languages ?? []) {
@@ -47,7 +53,7 @@ export function resolveSystemUiLocale(languages: readonly string[] | null | unde
       if (/^zh-hant(?:[-.]|$)/iu.test(normalized)) return 'zh-TW';
       return 'zh-CN';
     }
-    if (/^en(?:[-_]|$)/iu.test(normalized)) return 'en';
+    if (/^en(?:[-.]|$)/iu.test(normalized)) return 'en';
   }
   return 'en';
 }

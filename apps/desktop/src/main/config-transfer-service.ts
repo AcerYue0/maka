@@ -18,6 +18,7 @@
  */
 
 import type { AppSettings, UpdateAppSettingsInput } from '@maka/core/settings';
+import { normalizeUiLocalePreference } from '@maka/core/ui-locale';
 import {
   reconcileConnectionAfterEnabledModelsChange,
   type LlmConnection,
@@ -101,7 +102,21 @@ export async function applyConfigImport(
   }
 
   if (bundle.data.settings && typeof bundle.data.settings === 'object') {
-    await deps.settingsStore.update(bundle.data.settings as unknown as UpdateAppSettingsInput);
+    const patch = bundle.data.settings as unknown as UpdateAppSettingsInput;
+    const importedPersonalization = patch.personalization as
+      | (NonNullable<UpdateAppSettingsInput['personalization']> & { uiLocale?: unknown })
+      | undefined;
+    await deps.settingsStore.update(
+      importedPersonalization && Object.hasOwn(importedPersonalization, 'uiLocale')
+        ? {
+            ...patch,
+            personalization: {
+              ...importedPersonalization,
+              uiLocale: normalizeUiLocalePreference(importedPersonalization.uiLocale),
+            },
+          }
+        : patch,
+    );
     result.settings = { applied: true };
   }
 
