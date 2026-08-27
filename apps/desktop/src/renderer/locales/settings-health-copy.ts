@@ -131,6 +131,11 @@ function healthSignalMessageZhTw(signal: HealthSignal): string {
 
 function healthSignalDetailZhTw(signal: HealthSignal): string | undefined {
   if (!signal.detail) return undefined;
+  const runtimeDetail = /^模型=(.*?) · 延迟=(\d+)ms(?: · 错误类型=(.*))?$/u.exec(signal.detail);
+  if (runtimeDetail) {
+    const [, model, latency, errorClass] = runtimeDetail;
+    return `模型=${model} · 延遲=${latency}ms${errorClass ? ` · 錯誤類型=${errorClass}` : ''}`;
+  }
   return healthDetailZhTw[signal.detail]
     ?? (/[\u3400-\u9fff]/u.test(signal.detail) ? '詳細資料請參閱對應的設定頁。' : signal.detail);
 }

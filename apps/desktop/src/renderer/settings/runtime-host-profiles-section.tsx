@@ -142,7 +142,7 @@ export function RuntimeHostProfilesSection(props: {
       if (result.kind === "unavailable") {
         toast.error(
           copy.selectFailed,
-          result.message,
+          settingsActionErrorMessage(result.message, locale),
           undefined,
           { profileId },
         );

@@ -22,6 +22,7 @@ import { test } from 'node:test';
 import { getSettingsPreferencesCopy } from '../../renderer/locales/settings-preferences-copy.js';
 import { getMcpCatalog } from '../../renderer/mcp-catalog.js';
 import { providerDisplay } from '../../renderer/settings/provider-display-copy.js';
+import { getBotSettingsCopy } from '../../renderer/locales/settings-bot-copy.js';
 
 test('language selector offers every preference with locale-appropriate labels', () => {
   assert.deepEqual(getSettingsPreferencesCopy('zh-CN').personalization.localeOptions, [
@@ -62,4 +63,11 @@ test('Traditional Chinese MCP catalog does not fall back to Simplified Chinese',
 test('Traditional Chinese provider cards use Taiwan connection terminology', () => {
   assert.equal(providerDisplay('deepseek', 'zh-TW').description, 'DeepSeek 官方 API 連線');
   assert.match(providerDisplay('github-copilot', 'zh-TW').description, /訂閱連線/);
+});
+
+test('Traditional Chinese bot settings use Taiwan integration terminology', () => {
+  const copy = getBotSettingsCopy('zh-TW');
+  assert.match(copy.providers.wecom.help, /串接/);
+  assert.doesNotMatch(copy.providers.wecom.help, /接入/);
+  assert.match(copy.overview.more, /串接更多/);
 });
