@@ -337,7 +337,7 @@ interface SubscriptionDisplay {
   detail: string;
 }
 
-function presentSnapshotDetail(state: SubscriptionSnapshot | null, display: SubscriptionDisplay, locale: 'zh' | 'en'): string {
+function presentSnapshotDetail(state: SubscriptionSnapshot | null, display: SubscriptionDisplay, locale: 'zh-CN' | 'zh-TW' | 'en'): string {
   const copy = getProviderSettingsCopy(locale).oauthSection;
   if (!state) return copy.loadingAccount;
   switch (state.runtimeState) {

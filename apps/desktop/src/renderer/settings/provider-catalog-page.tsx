@@ -238,7 +238,7 @@ export function ProviderSetupPage(props: {
   );
 }
 
-function providersForCategory(category: CatalogCategory, query: string, locale: 'zh' | 'en'): ProviderType[] {
+function providersForCategory(category: CatalogCategory, query: string, locale: 'zh-CN' | 'zh-TW' | 'en'): ProviderType[] {
   // 'accounts' is the OAuth-only category: every row in it comes from
   // useOAuthCards, so the keyed catalog contributes nothing.
   if (category === 'accounts') return [];

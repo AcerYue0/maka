@@ -361,7 +361,7 @@ export function ExploreAgentPreview(props: {
  * dist in tool-activity-result-preview-contract.test.ts, which knip cannot
  * trace through the runtime module URL.
  */
-export function buildExploreAgentCopyPayloads(result: ExploreAgentResult, locale: UiLocale = 'zh'): Record<'summary' | 'process' | 'evidence' | 'report' | 'candidate' | 'matches' | 'continuation', string> {
+export function buildExploreAgentCopyPayloads(result: ExploreAgentResult, locale: UiLocale = 'zh-CN'): Record<'summary' | 'process' | 'evidence' | 'report' | 'candidate' | 'matches' | 'continuation', string> {
   return buildExploreAgentPreviewModel(result, locale).copyPayloads;
 }
 

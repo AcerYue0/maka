@@ -38,7 +38,7 @@ const withMakaRoot: Decorator = (Story, context) => {
   // lines are ~1.8× the width of the Chinese copy, so a row that fits in zh
   // overflows, truncates, or clips in en. Stories were locked to `zh`, which
   // is exactly why those breakages only ever showed up in the shipped app.
-  const locale = context.globals.locale === 'en' ? 'en' : 'zh';
+  const locale = context.globals.locale === 'en' ? 'en' : 'zh-CN';
 
   root.classList.toggle('dark', colorScheme === 'dark');
   root.style.colorScheme = colorScheme;
@@ -96,7 +96,7 @@ const preview: Preview = {
       toolbar: {
         icon: 'globe',
         items: [
-          { title: '中文', value: 'zh' },
+          { title: '中文', value: 'zh-CN' },
           { title: 'English', value: 'en' },
         ],
       },
@@ -114,7 +114,7 @@ const preview: Preview = {
   },
   initialGlobals: {
     colorScheme: 'light',
-    locale: 'zh',
+    locale: 'zh-CN',
     palette: 'default',
   },
   parameters: {

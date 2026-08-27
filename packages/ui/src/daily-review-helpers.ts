@@ -54,7 +54,7 @@ export function dailyReviewScopeKey(offsetDays: number, range: DailyReviewRange)
 
 export function dailyReviewPanelErrorMessage(error: unknown, locale: UiLocale): string {
   const fallback = getDailyReviewCopy(locale).errorFallback;
-  return locale === 'zh'
+  return locale !== 'en'
     ? generalizedErrorMessageChinese(error, fallback)
     : generalizedErrorMessage(error, fallback);
 }

@@ -22,15 +22,15 @@ import { type UiLocale } from '@maka/core/ui-locale';
 import { redactSecrets } from '@maka/ui';
 import { getSettingsSharedCopy } from '../locales/settings-shared-copy.js';
 
-export function settingsActionErrorMessage(error: unknown, locale: UiLocale = 'zh'): string {
+export function settingsActionErrorMessage(error: unknown, locale: UiLocale = 'zh-CN'): string {
   const raw = error instanceof Error
     ? error.message
     : typeof error === 'string'
       ? error
       : '';
-  const classified = locale === 'zh' ? generalizedErrorMessageChinese(new Error(raw), '') : '';
+  const classified = locale !== 'en' ? generalizedErrorMessageChinese(new Error(raw), '') : '';
   if (classified) return classified;
   const redacted = redactSecrets(raw).trim();
-  if (locale === 'zh' && redacted && /[\u4E00-\u9FFF]/.test(redacted)) return redacted;
+  if (locale !== 'en' && redacted && /[\u4E00-\u9FFF]/.test(redacted)) return redacted;
   return getSettingsSharedCopy(locale).unknownError;
 }

@@ -128,7 +128,7 @@ function searchModalThrownErrorMessage(
   locale: UiLocale,
   fallback: string,
 ): string {
-  return locale === 'zh'
+  return locale !== 'en'
     ? generalizedErrorMessageChinese(error, fallback)
     : generalizedErrorMessage(error, fallback);
 }

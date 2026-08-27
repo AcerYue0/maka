@@ -73,7 +73,7 @@ import { getUsageSettingsCopy } from '../../src/renderer/locales/settings-usage-
  * function, so CI could not tell us. A story that drives the UI by its visible
  * text has to source that text where the UI does.
  */
-const DAILY_REVIEW_DEFAULT_MODEL_LABEL = getDailyReviewSettingsCopy('zh').defaultModel;
+const DAILY_REVIEW_DEFAULT_MODEL_LABEL = getDailyReviewSettingsCopy('zh-CN').defaultModel;
 /** A 1×1 transparent PNG: the picker needs a valid data URL, not real art. */
 const STORY_ICON_PREVIEW =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
@@ -1983,7 +1983,9 @@ export const UsageLongTail: Story = {
   render: () => <SettingsStory section="usage" />,
   play: async ({ canvasElement, globals }) => {
     const canvas = within(canvasElement);
-    const usageCopy = getUsageSettingsCopy(globals.locale === 'en' ? 'en' : 'zh');
+    const usageCopy = getUsageSettingsCopy(
+      globals.locale === 'en' ? 'en' : globals.locale === 'zh-TW' ? 'zh-TW' : 'zh-CN',
+    );
     expect(
       await canvas.findByText(usageCopy.totalRequests, {
         selector: '[data-slot="stat-tile-label"]',

@@ -42,7 +42,7 @@ function sessionMessageErrorMessage(error: unknown, fallback: string, locale: Ui
 }
 
 function localizedErrorMessage(error: unknown, fallback: string, locale: UiLocale): string {
-  return locale === 'zh' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
+  return locale !== 'en' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
 }
 
 export function commandPaletteActionErrorMessage(error: unknown, fallback: string, locale: UiLocale): string {

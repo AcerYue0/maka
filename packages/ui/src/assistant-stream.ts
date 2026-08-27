@@ -133,7 +133,7 @@ export function applyAssistantDelta(
 ): ApplyAssistantResult {
   const maxDelta = options.maxDeltaChars ?? ASSISTANT_MAX_DELTA_CHARS;
   const maxTotal = options.maxTotalChars ?? ASSISTANT_MAX_TOTAL_CHARS;
-  const copy = getSharedUiCopy(options.locale ?? 'zh').stream;
+  const copy = getSharedUiCopy(options.locale ?? 'zh-CN').stream;
   const truncatedChunkMarker = copy.assistantChunkTruncated;
   const truncatedTailMarker = copy.assistantTailTruncated;
 
@@ -227,7 +227,7 @@ export function applyAssistantComplete(
   options: Pick<ApplyAssistantOptions, 'maxTotalChars' | 'locale'> = {},
 ): ApplyAssistantResult {
   const maxTotal = options.maxTotalChars ?? ASSISTANT_MAX_TOTAL_CHARS;
-  const truncatedTailMarker = getSharedUiCopy(options.locale ?? 'zh').stream.assistantTailTruncated;
+  const truncatedTailMarker = getSharedUiCopy(options.locale ?? 'zh-CN').stream.assistantTailTruncated;
 
   if (typeof rawText !== 'string') {
     return { text: '', redacted: false, truncated: false };

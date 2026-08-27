@@ -63,7 +63,7 @@ test('confirmed repair and unavailable states block, while loading uncertainty d
 
 test('model blockers stay owned by existing connection recovery surfaces', () => {
   assert.equal(
-    deriveTaskReadinessNotice(snapshot('repair_required', 'model_target'), 'zh'),
+    deriveTaskReadinessNotice(snapshot('repair_required', 'model_target'), 'zh-CN'),
     undefined,
   );
 });

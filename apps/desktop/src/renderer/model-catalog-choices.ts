@@ -46,7 +46,7 @@ export function buildCatalogRecommendedDefaultModel(providerType: ProviderType):
 export function buildCatalogDailyReviewModelOptions(
   connections: readonly LlmConnection[],
   currentModelKey: string,
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): Array<readonly [string, string]> {
   const current = parseDailyReviewModelKey(currentModelKey);
   const candidates: Array<{ key: string; label: string; safeSourceLabel: string }> = [];
@@ -151,7 +151,7 @@ function modelDisplayLabel(entry: Pick<ModelCatalogEntry, 'id' | 'displayName'>)
 
 function dailyReviewModelDisplayLabel(
   entry: Pick<ModelCatalogEntry, 'id' | 'displayName' | 'canUseAsChatDefault'>,
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const label = modelDisplayLabel(entry);
   return entry.canUseAsChatDefault ? label : `${label} · ${getShellRemainingCopy(locale).models.unavailable}`;

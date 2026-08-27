@@ -24,7 +24,7 @@ export function clientSettingsConfirmation(
   changes: readonly ClientSettingsChange[],
   locale: UiLocale,
 ): { message: string; detail: string; buttons: [string, string] } {
-  const zh = locale === 'zh';
+  const zh = locale !== 'en';
   const labels: Record<ClientSettingsChange['key'], readonly [string, string]> = {
     theme: ['Theme', '主题'],
     palette: ['Palette', '配色'],

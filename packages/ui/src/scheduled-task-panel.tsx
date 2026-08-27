@@ -245,7 +245,7 @@ export function ScheduledTaskPanel(props: {
     } catch (error) {
       // Revert to reflect REALITY, and surface the failure in Chinese.
       if (scheduledTaskMountedRef.current) setKeepSystemAwakeChecked(!next);
-      toast.error(copy.page.keepAwakeErrorTitle, locale === 'zh'
+      toast.error(copy.page.keepAwakeErrorTitle, locale !== 'en'
         ? generalizedErrorMessageChinese(error, copy.page.keepAwakeErrorFallback)
         : generalizedErrorMessage(error, copy.page.keepAwakeErrorFallback));
     } finally {

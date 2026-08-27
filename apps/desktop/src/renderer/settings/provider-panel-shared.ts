@@ -53,7 +53,7 @@ export interface ConnectionsBridge {
 
 export type CredentialPresenceStatus = boolean | 'loading' | 'error';
 
-export function providerPanelActionErrorMessage(error: unknown, locale: UiLocale = 'zh'): string {
+export function providerPanelActionErrorMessage(error: unknown, locale: UiLocale = 'zh-CN'): string {
   const shared = getProviderSettingsCopy(locale).shared;
   // Electron wraps ipcMain.handle rejections as "Error invoking remote method
   // '<channel>': Error: <message>". Classify the original message, not the
@@ -66,11 +66,11 @@ export function providerPanelActionErrorMessage(error: unknown, locale: UiLocale
   // of flattening it into a coarser classification or the generic fallback.
   if (/[\u3400-\u9fff]/.test(cleaned)) return cleaned;
   if (/connection_stale|Unable to delete Connection: connection_stale/i.test(cleaned)) {
-    return locale === 'zh'
+    return locale !== 'en'
       ? '连接状态已更新，请刷新列表后再删除。'
       : 'The connection changed while deleting. Refresh the list and try again.';
   }
-  const classified = locale === 'zh'
+  const classified = locale !== 'en'
     ? generalizedErrorMessageChinese(new Error(cleaned), '')
     : generalizedErrorMessage(new Error(cleaned), '');
   return classified || shared.actionFallback;
@@ -89,7 +89,7 @@ export interface ConnectionTestTroubleshootingCopy {
 export function connectionTestFailureFallback(
   result: ConnectionTestResult,
   copy: ConnectionTestTroubleshootingCopy,
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const shared = getProviderSettingsCopy(locale).shared;
   if (result.statusCode === 429) return shared.rateLimit;
@@ -107,16 +107,16 @@ export function connectionTestFailureFallback(
 export function connectionTestFailureMessage(
   result: ConnectionTestResult,
   copy: ConnectionTestTroubleshootingCopy,
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const fallback = connectionTestFailureFallback(result, copy, locale);
   if (!result.errorMessage) return fallback;
-  return locale === 'zh'
+  return locale !== 'en'
     ? generalizedErrorMessageChinese(new Error(result.errorMessage), fallback)
     : generalizedErrorMessage(new Error(result.errorMessage), fallback);
 }
 
-export function connectionLastTestMessageDisplay(message: string | undefined, locale: UiLocale = 'zh'): string | undefined {
+export function connectionLastTestMessageDisplay(message: string | undefined, locale: UiLocale = 'zh-CN'): string | undefined {
   if (!message) return undefined;
   const trimmed = message.trim();
   if (!trimmed) return undefined;
@@ -124,12 +124,12 @@ export function connectionLastTestMessageDisplay(message: string | undefined, lo
   const copy = getProviderSettingsCopy(locale).shared;
   const known = (copy.lastTest as Readonly<Record<string, string>>)[normalized];
   if (known) return known;
-  const classified = locale === 'zh'
+  const classified = locale !== 'en'
     ? generalizedErrorMessageChinese(new Error(trimmed), '')
     : generalizedErrorMessage(new Error(trimmed), '');
   return classified || copy.statusUnavailable;
 }
 
-export function categoryLabel(category: ProviderCategory, locale: UiLocale = 'zh'): string {
+export function categoryLabel(category: ProviderCategory, locale: UiLocale = 'zh-CN'): string {
   return getProviderSettingsCopy(locale).shared.categories[category];
 }

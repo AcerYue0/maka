@@ -142,7 +142,7 @@ export function useSessionTrace(
                   loading: false,
                   loadingEarlier: false,
                   error:
-                    copy.locale === 'zh'
+                    copy.locale !== 'en'
                       ? generalizedErrorMessageChinese(error, copy.loadFailed)
                       : generalizedErrorMessage(error, copy.loadFailed),
                 }
@@ -199,7 +199,7 @@ export function useSessionTrace(
                   loading: false,
                   loadingEarlier: false,
                   error:
-                    copy.locale === 'zh'
+                    copy.locale !== 'en'
                       ? generalizedErrorMessageChinese(error, copy.loadFailed)
                       : generalizedErrorMessage(error, copy.loadFailed),
                 }

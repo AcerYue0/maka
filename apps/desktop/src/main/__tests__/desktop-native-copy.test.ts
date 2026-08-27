@@ -25,11 +25,11 @@ import {
 import { projectPickerTitle } from '../project-picker-copy.js';
 
 test('localizes native picker and client settings confirmation copy', () => {
-  assert.equal(projectPickerTitle('zh'), '添加项目');
+  assert.equal(projectPickerTitle('zh-CN'), '添加项目');
   assert.deepEqual(
     clientSettingsConfirmation(
       [{ key: 'keepSystemAwake', current: false, next: true }],
-      'zh',
+      'zh-CN',
     ),
     {
       message: '允许 Maka 更新此客户端的设置吗？',

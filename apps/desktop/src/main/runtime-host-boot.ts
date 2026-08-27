@@ -1637,7 +1637,7 @@ async function confirmDesktopStorageRootRepair(
     "[storage-root] root-identity conflict; parking at repair dialog",
   );
   const isChinese =
-    resolveSystemUiLocale(app.getPreferredSystemLanguages()) === "zh";
+    resolveSystemUiLocale(app.getPreferredSystemLanguages()) !== "en";
   const { response } = await showStartupDiagnosticDialog(
     {
       type: "warning",
@@ -1655,7 +1655,7 @@ async function confirmDesktopStorageRootRepair(
       cancelId: 1,
       noLink: true,
     },
-    isChinese ? "zh" : "en",
+    isChinese ? "zh-CN" : "en",
   );
   return response === 0;
 }
@@ -1665,7 +1665,7 @@ async function promptForDefaultRuntimeHostRecovery(input: {
   readonly error: Error;
 }): Promise<"retry" | "use_local" | "keep_offline"> {
   const isChinese =
-    resolveSystemUiLocale(app.getPreferredSystemLanguages()) === "zh";
+    resolveSystemUiLocale(app.getPreferredSystemLanguages()) !== "en";
   const { response } = await showStartupDiagnosticDialog(
     {
       type: "warning",
@@ -1685,7 +1685,7 @@ async function promptForDefaultRuntimeHostRecovery(input: {
       cancelId: 2,
       noLink: true,
     },
-    isChinese ? "zh" : "en",
+    isChinese ? "zh-CN" : "en",
   );
   return response === 0 ? "retry" : response === 1 ? "use_local" : "keep_offline";
 }

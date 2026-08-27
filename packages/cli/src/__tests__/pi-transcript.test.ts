@@ -119,7 +119,7 @@ describe('Maka Pi TUI transcript', () => {
     assert.match(english, /Type a message to start/);
     assert.match(english, /\/session\s+Switch or resume a session/);
 
-    const chinese = renderMakaPiTranscript(state, { ...meta(), uiLocale: 'zh' }, 100)
+    const chinese = renderMakaPiTranscript(state, { ...meta(), uiLocale: 'zh-CN' }, 100)
       .map(stripAnsi)
       .join('\n');
     assert.match(chinese, /陪你把事做完/);

@@ -218,7 +218,7 @@ describe('Maka Pi TUI runner', () => {
     const driver = new SlashCommandDriver();
     const run = runMakaPiTui({
       title: 'Maka',
-      locale: 'zh',
+      locale: 'zh-CN',
       driver,
       cwd: '/repo',
       model: 'claude-sonnet-4-5',

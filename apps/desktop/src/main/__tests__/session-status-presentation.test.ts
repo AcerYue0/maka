@@ -32,13 +32,13 @@ const outputFreeFailure = {
 
 describe('failed turn recovery presentation', () => {
   it('presents persisted provider server errors as provider failures', () => {
-    assert.equal(describeTurnErrorClass('server_error', 'zh'), '模型服务返回错误');
+    assert.equal(describeTurnErrorClass('server_error', 'zh-CN'), '模型服务返回错误');
     assert.equal(describeTurnErrorClass('server_error', 'en'), 'Model service error');
   });
 
   it('does not recommend a byte-identical retry after context overflow', () => {
     assert.deepEqual(
-      deriveFailedTurnRecovery({ ...outputFreeFailure, errorClass: 'context_overflow' }, 'zh'),
+      deriveFailedTurnRecovery({ ...outputFreeFailure, errorClass: 'context_overflow' }, 'zh-CN'),
       { action: 'continue', label: '上下文仍超出限制，请减少附件或开启新任务' },
     );
     assert.deepEqual(

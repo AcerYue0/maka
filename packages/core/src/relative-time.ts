@@ -48,7 +48,8 @@ const SIDEBAR_TIME_BUCKETS = [
 ] as const;
 
 const JUST_NOW: UiCatalog<string> = {
-  zh: '刚刚',
+  'zh-CN': '刚刚',
+  'zh-TW': '剛剛',
   en: 'just now',
 };
 
@@ -92,7 +93,7 @@ function getAbsoluteFormat(uiLocale: UiLocale): Intl.DateTimeFormat {
 export function formatRelativeTimestamp(
   ts: number,
   now: number = Date.now(),
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const diffMs = relativeAgeMs(ts, now);
   if (diffMs < JUST_NOW_MS) {
@@ -145,7 +146,7 @@ function getCompactFormats(uiLocale: UiLocale): {
 export function formatCompactTimestamp(
   ts: number,
   now: number = Date.now(),
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const diffMs = relativeAgeMs(ts, now);
   if (diffMs <= RELATIVE_HORIZON_MS) return formatRelativeTimestamp(ts, now, locale);
@@ -165,7 +166,7 @@ export function formatCompactTimestamp(
 export function formatSidebarTimestamp(
   ts: number,
   now: number = Date.now(),
-  locale: UiLocale = 'zh',
+  locale: UiLocale = 'zh-CN',
 ): string {
   const diffMs = relativeAgeMs(ts, now);
   if (diffMs < JUST_NOW_MS) return JUST_NOW[locale];

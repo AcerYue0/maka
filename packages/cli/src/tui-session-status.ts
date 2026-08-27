@@ -30,12 +30,20 @@ interface TuiSessionStatusCopy {
 }
 
 const TUI_SESSION_STATUS_COPY = {
-  zh: {
+  'zh-CN': {
     running: '进行中',
     waitingForUser: '等你确认',
     permissionRequired: '需要权限',
     connectionRequired: '需要连接',
     signInRequired: '需要重新登录',
+    stopped: '已中止',
+  },
+  'zh-TW': {
+    running: '進行中',
+    waitingForUser: '等你確認',
+    permissionRequired: '需要權限',
+    connectionRequired: '需要連線',
+    signInRequired: '需要重新登入',
     stopped: '已中止',
   },
   en: {

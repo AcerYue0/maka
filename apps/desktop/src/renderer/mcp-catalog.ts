@@ -241,7 +241,7 @@ const MCP_CATALOG_ENGLISH_COPY: Record<McpCatalogId, McpCatalogLocalizedCopy> = 
 };
 
 export function getMcpCatalog(locale: UiLocale): McpCatalogEntry[] {
-  if (locale === 'zh') return MCP_CATALOG;
+  if (locale !== 'en') return MCP_CATALOG;
   return MCP_CATALOG.map((entry) => ({ ...entry, ...MCP_CATALOG_ENGLISH_COPY[entry.id] }));
 }
 

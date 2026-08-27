@@ -23,7 +23,7 @@ import { getHealthCenterCopy } from '../../renderer/locales/settings-health-copy
 
 test('labels blocker counts as global across filtered health views', () => {
   assert.equal(
-    getHealthCenterCopy('zh').blockers.send(1, 6),
+    getHealthCenterCopy('zh-CN').blockers.send(1, 6),
     '全部健康信号中，1/6 条会阻塞发送',
   );
   assert.equal(

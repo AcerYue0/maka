@@ -40,7 +40,7 @@ export interface TuiPrimaryGuidanceCopy {
 }
 
 const TUI_PRIMARY_GUIDANCE = {
-  zh: {
+  'zh-CN': {
     welcome: {
       tagline: '陪你把事做完',
       start: '输入消息开始对话',
@@ -86,6 +86,54 @@ const TUI_PRIMARY_GUIDANCE = {
         '  Esc Esc（空闲时）— 回退到较早的轮次',
         '  Ctrl+C — 停止任务、清空输入，或连续按两次退出',
         '  Ctrl+D — 输入为空时退出',
+      ],
+    },
+  },
+  'zh-TW': {
+    welcome: {
+      tagline: '陪你把事做完',
+      start: '輸入訊息開始對話',
+      session: '切換或恢復會話',
+      model: '切換模型',
+      setup: '設定模型提供商',
+    },
+    commands: {
+      compact: '壓縮會話上下文',
+      context: '檢視最近一次請求的上下文用量',
+      exit: '退出 Maka',
+      goal: '檢視自主目標狀態',
+      graph: '檢視、啟用、停用 Graph 模式，或執行一次 Graph 任務',
+      help: '檢視命令和快捷鍵',
+      model: '選擇模型',
+      move: '將目前會話移到其他目錄',
+      new: '建立會話',
+      permissions: '設定會話權限',
+      recap: '用一句話總結目前會話',
+      rename: '重新命名目前會話',
+      resume: '從安全邊界恢復最近一次中斷的執行',
+      rewind: '回退到較早的對話輪次',
+      session: '切換或恢復會話',
+      setup: '設定模型提供商（API Key）',
+      side: '開啟臨時 Side Conversation',
+      skill: '呼叫 Skill（也可直接輸入 /skill:<name>）',
+      swarm: '檢視、啟用、停用 Swarm 模式，或執行一次 Swarm 任務',
+      thinking: '設定思考級別',
+      transcript: '在 Maka 內瀏覽完整對話記錄',
+    },
+    help: {
+      commandsHeading: '命令',
+      keybindingsHeading: '快捷鍵',
+      keybindings: [
+        '  Ctrl+O — 展開或摺疊所有工具輸出',
+        '  Ctrl+T — 展開或摺疊檢視中的所有思考塊',
+        '  使用終端或觸控板滾動對話記錄',
+        '  Enter（任務執行中）— 將訊息注入目前任務',
+        '  Alt+Enter（任務執行中）— 將訊息排入下一輪',
+        '  Alt+↑ — 將已排隊訊息取回編輯器重新編輯',
+        '  Esc Esc（任務執行中）— 中斷目前任務',
+        '  Esc Esc（空閒時）— 回退到較早的輪次',
+        '  Ctrl+C — 停止任務、清空輸入，或連續按兩次退出',
+        '  Ctrl+D — 輸入為空時退出',
       ],
     },
   },

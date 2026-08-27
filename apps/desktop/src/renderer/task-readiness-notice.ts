@@ -94,7 +94,7 @@ function noticeForBlocker(
   locale: UiLocale,
 ): TaskReadinessNotice {
   if (blocker.id === 'runtime') {
-    return locale === 'zh'
+    return locale !== 'en'
       ? {
           tone: 'destructive',
           title: 'Maka 运行服务暂时不可用。',
@@ -111,7 +111,7 @@ function noticeForBlocker(
         };
   }
   const action = blocker.repairTarget?.kind === 'workspace_picker' ? 'workspace_picker' : 'retry';
-  return locale === 'zh'
+  return locale !== 'en'
     ? {
         tone: 'destructive',
         title: '当前任务的工作区不可用。',

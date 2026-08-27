@@ -38,7 +38,7 @@ import {
 function renderWithLocale(child: ReactNode): string {
   return renderToStaticMarkup(
     createElement(LocaleProvider, {
-      locale: 'zh',
+      locale: 'zh-CN',
       children: createElement(ChatSurfaceLayout, { composer: null, children: child }),
     }),
   );
@@ -283,7 +283,7 @@ describe('single live-turn handoff', () => {
       liveTurnBySessionRef.current = liveTurns.get();
     };
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef,
       refreshMessages: async (sessionId, options) => {
@@ -336,7 +336,7 @@ describe('single live-turn handoff', () => {
     const frames: Array<() => void> = [];
     let publications = 0;
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef,
       refreshMessages: async () => true,
@@ -389,7 +389,7 @@ describe('single live-turn handoff', () => {
     const frames: Array<() => void> = [];
     let publications = 0;
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef,
       refreshMessages: async () => true,
@@ -452,7 +452,7 @@ describe('single live-turn handoff', () => {
     const displayBatch = createAppShellSessionDisplayBatch();
     let publications = 0;
     const deps = {
-      uiLocale: 'zh' as const,
+      uiLocale: 'zh-CN' as const,
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef,
       refreshMessages: async () => true,
@@ -499,7 +499,7 @@ describe('single live-turn handoff', () => {
       ref.current = liveTurns.get();
     };
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef: ref,
       refreshMessages: async () => true,
@@ -556,7 +556,7 @@ describe('single live-turn handoff', () => {
       resolveRefresh = resolve;
     });
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef: ref,
       refreshMessages: async () => refresh,
@@ -605,7 +605,7 @@ describe('single live-turn handoff', () => {
       | { sessionId: string; turnId: string; eventId: string }
       | undefined;
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef: ref,
       refreshMessages: async () => false,
@@ -678,7 +678,7 @@ describe('single live-turn handoff', () => {
     const ref = { current: liveTurns.get() };
     const interactions = createStateSetter<InteractionQueues>({});
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef: ref,
       refreshMessages: async () => true,
@@ -718,7 +718,7 @@ describe('single live-turn handoff', () => {
       resolveRefresh = resolve;
     });
     const handlers = createAppShellSessionEventHandlers({
-      uiLocale: 'zh',
+      uiLocale: 'zh-CN',
       activeIdRef: { current: 'session-1' },
       liveTurnBySessionRef: ref,
       refreshMessages: async () => refresh,

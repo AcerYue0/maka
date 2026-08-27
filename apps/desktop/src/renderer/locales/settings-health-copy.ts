@@ -87,7 +87,7 @@ const layersEn: HealthCenterCopy['layers'] = {
 };
 
 const SETTINGS_HEALTH_COPY = {
-  zh: {
+  'zh-CN': {
     loading: '正在加载健康快照', readFailed: '无法读取健康快照', noData: '健康服务未返回数据。', readAgain: '重新读取',
     title: '健康中心', subtitle: '各项能力当前的运行状况检查。',
     badge: '只读快照', lastRead: '最近一次读取：', refresh: '刷新', summaryAria: '按状态筛选健康信号', summaryFilterAria: (label, count, selected) => selected ? `${label} ${count} 项，当前筛选；再次按下显示全部` : `仅显示${label}健康信号，共 ${count} 项`,
@@ -102,6 +102,25 @@ const SETTINGS_HEALTH_COPY = {
     scopes: { app: '应用', llm_connection: 'LLM 连接', bot: '机器人', capability: '能力', storage: '存储' },
     sources: { connection_test: '连接测试', capability_snapshot: '能力快照', permission_snapshot: '权限快照', runtime_probe: '运行态探测', settings: '设置', storage: '本地存储' },
     source: '来源：', blocksSend: '阻塞发送', blocksCapability: '阻塞能力',
+    signalLabel: (signal) => signal.label,
+    signalMessage: (signal) => signal.message,
+    signalDetail: (signal) => signal.detail,
+  },
+  'zh-TW': {
+    loading: '正在載入健康快照', readFailed: '無法讀取健康快照', noData: '健康服務未返回資料。', readAgain: '重新讀取',
+    title: '健康中心', subtitle: '各項能力目前的執行狀況檢查。',
+    badge: '只讀快照', lastRead: '最近一次讀取：', refresh: '重新整理', summaryAria: '按狀態篩選健康訊號', summaryFilterAria: (label, count, selected) => selected ? `${label} ${count} 項，目前篩選；再次按下顯示全部` : `僅顯示${label}健康訊號，共 ${count} 項`,
+    blockers: {
+      send: (count, totalCount) => `全部健康訊號中，${count}/${totalCount} 條會阻塞傳送`,
+      capability: (count, totalCount) => `全部健康訊號中，${count}/${totalCount} 條會阻塞能力`,
+    },
+    layerAria: (label) => `${label}健康訊號`, layerListAria: (label) => `${label}健康訊號列表`,
+    footnote: '本頁不直接執行測試、修復或權限變更；它只彙總目前已記錄的健康訊號。需要處理問題時，請進入對應設定頁或重新觸發相關功能。',
+    layers: layersZh,
+    statuses: { ok: { label: '正常', tone: 'neutral' }, info: { label: '提示', tone: 'neutral' }, warning: { label: '警告', tone: 'attention' }, error: { label: '錯誤', tone: 'error' }, unknown: { label: '未知', tone: 'neutral' } },
+    scopes: { app: '應用', llm_connection: 'LLM 連線', bot: '機器人', capability: '能力', storage: '儲存' },
+    sources: { connection_test: '連線測試', capability_snapshot: '能力快照', permission_snapshot: '權限快照', runtime_probe: '執行態探測', settings: '設定', storage: '本地儲存' },
+    source: '來源：', blocksSend: '阻塞傳送', blocksCapability: '阻塞能力',
     signalLabel: (signal) => signal.label,
     signalMessage: (signal) => signal.message,
     signalDetail: (signal) => signal.detail,

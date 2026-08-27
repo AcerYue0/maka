@@ -77,7 +77,7 @@ type GraphPanelCopy = {
 };
 
 export function getAgentGraphPanelCopy(locale: UiLocale): GraphPanelCopy {
-  if (locale === 'zh') {
+  if (locale !== 'en') {
     return {
       title: 'Agent Graph',
       loading: '正在读取 Graph 状态…',

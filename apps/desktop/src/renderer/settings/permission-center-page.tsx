@@ -712,7 +712,7 @@ function localizedCapabilityGuidance(
   locale: UiLocale,
   copy: PermissionCenterCopy,
 ): readonly string[] {
-  return capability.guidance.filter((item) => locale === 'zh' || !/[\u3400-\u9fff]/u.test(item));
+  return capability.guidance.filter((item) => locale !== 'en' || !/[\u3400-\u9fff]/u.test(item));
 }
 
 function featureTone(state: CapabilitySnapshot['feature']['state']): StatusSemantic {

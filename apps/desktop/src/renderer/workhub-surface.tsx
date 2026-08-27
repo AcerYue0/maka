@@ -614,7 +614,7 @@ function SubmittedWorkView(props: {
 }
 
 function workHubCopy(locale: UiLocale) {
-  if (locale === 'zh') {
+  if (locale !== 'en') {
     return {
       locale,
       subtitle: '在一个入口里继续、创建和查看普通 Session',

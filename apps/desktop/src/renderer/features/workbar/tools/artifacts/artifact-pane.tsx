@@ -631,11 +631,11 @@ function saveArtifactFailureCopy(reason: string, copy: ArtifactCopy): string {
 function artifactActionErrorMessage(error: unknown, locale: UiLocale, copy: ArtifactCopy): string {
   const raw = redactSecrets(error instanceof Error ? error.message : String(error ?? '')).trim();
   if (!raw) return copy.pane.actionFailed;
-  const classified = locale === 'zh'
+  const classified = locale !== 'en'
     ? generalizedErrorMessageChinese(new Error(raw), '')
     : generalizedErrorMessage(new Error(raw), '');
   if (classified) return classified;
-  return locale === 'zh' && /[\u4e00-\u9fff]/.test(raw) ? raw : copy.pane.actionFailed;
+  return locale !== 'en' && /[\u4e00-\u9fff]/.test(raw) ? raw : copy.pane.actionFailed;
 }
 
 function KindIcon(props: { kind: ArtifactKind }) {

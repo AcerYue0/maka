@@ -61,7 +61,7 @@ export function useSessionTasks(sessionId: string | undefined): SessionTaskSnaps
           sessionId: targetSessionId,
           tasks: current.sessionId === targetSessionId ? current.tasks : [],
           loading: false,
-          error: locale === 'zh'
+          error: locale !== 'en'
             ? generalizedErrorMessageChinese(error, copy.loadFailed)
             : generalizedErrorMessage(error, copy.loadFailed),
         }));

@@ -111,7 +111,7 @@ export function applyThinkingDelta(
 ): ApplyThinkingResult {
   const maxDelta = options.maxDeltaChars ?? THINKING_MAX_DELTA_CHARS;
   const maxTotal = options.maxTotalChars ?? THINKING_MAX_TOTAL_CHARS;
-  const copy = getSharedUiCopy(options.locale ?? 'zh').stream;
+  const copy = getSharedUiCopy(options.locale ?? 'zh-CN').stream;
   const truncatedHeadMarker = copy.thinkingHeadTruncated;
   const truncatedChunkMarker = copy.thinkingChunkTruncated;
   const previousText = prev ?? '';
@@ -190,7 +190,7 @@ export function applyThinkingComplete(
   options: ApplyThinkingOptions = {},
 ): ApplyThinkingResult {
   const maxTotal = options.maxTotalChars ?? THINKING_MAX_TOTAL_CHARS;
-  const truncatedHeadMarker = getSharedUiCopy(options.locale ?? 'zh').stream.thinkingHeadTruncated;
+  const truncatedHeadMarker = getSharedUiCopy(options.locale ?? 'zh-CN').stream.thinkingHeadTruncated;
 
   // Same defensive guard as `applyThinkingDelta`.
   if (typeof rawText !== 'string') {

@@ -40,7 +40,7 @@ const conflict = {
 
 test('localizes upgrade activity without changing decision indexes', () => {
   const en = buildRuntimeHostUpgradeDialogOptions(conflict, true, 'en');
-  const zh = buildRuntimeHostUpgradeDialogOptions(conflict, true, 'zh');
+  const zh = buildRuntimeHostUpgradeDialogOptions(conflict, true, 'zh-CN');
   assert.deepEqual(en.buttons, ['Restart Runtime Host', 'Wait', 'Cancel Startup']);
   assert.deepEqual(zh.buttons, ['重启 Runtime Host', '等待', '取消启动']);
   assert.equal(en.defaultId, 1);

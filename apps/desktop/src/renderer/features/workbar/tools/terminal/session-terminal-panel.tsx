@@ -147,7 +147,7 @@ export function SessionTerminalPanel(props: {
         .catch((nextError) => {
           if (disposed || !hydration.isCurrent(epoch)) return;
           setError(
-            locale === 'zh'
+            locale !== 'en'
               ? generalizedErrorMessageChinese(nextError, copy.loadFailed)
               : generalizedErrorMessage(nextError, copy.loadFailed),
           );
@@ -168,7 +168,7 @@ export function SessionTerminalPanel(props: {
         .catch((nextError) => {
           if (disposed) return;
           setError(
-            locale === 'zh'
+            locale !== 'en'
               ? generalizedErrorMessageChinese(nextError, copy.writeFailed)
               : generalizedErrorMessage(nextError, copy.writeFailed),
           );

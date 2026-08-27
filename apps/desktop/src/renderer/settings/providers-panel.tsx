@@ -467,7 +467,7 @@ export function ProvidersPanel({ bridge, initialPage = 'connections', initialCon
 }
 
 /** Provider · default model — the row's second line, and the detail's subtitle. */
-function connectionSubtitle(connection: LlmConnection, locale: 'zh' | 'en'): string {
+function connectionSubtitle(connection: LlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {
   const providerName = providerDisplay(connection.providerType, locale).name;
   const parts = [providerName];
   if (connection.defaultModel) parts.push(connection.defaultModel);

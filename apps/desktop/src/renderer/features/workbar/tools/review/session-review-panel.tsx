@@ -76,7 +76,7 @@ export function SessionReviewPanel(props: {
     } catch (nextError) {
       if (revision === revisionRef.current) {
         setError(
-          locale === 'zh'
+          locale !== 'en'
             ? generalizedErrorMessageChinese(nextError, copy.loadFailed)
             : generalizedErrorMessage(nextError, copy.loadFailed),
         );

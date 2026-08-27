@@ -251,7 +251,7 @@ export function createOnboardingSnapshotPoller(
 
 export function onboardingSnapshotErrorMessage(error: unknown, locale: UiLocale): string {
   const fallback = getOnboardingCopy(locale).snapshotErrorFallback;
-  return locale === 'zh' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
+  return locale !== 'en' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
 }
 
 /**

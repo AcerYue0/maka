@@ -63,12 +63,21 @@ const COPY = {
     cause: 'Cause',
     button: 'OK',
   },
-  zh: {
+  'zh-CN': {
     title: '无法安全退出 Maka',
     message: '本地 Runtime Host 未能安全停止，Maka 仍在运行。',
     detail: '退出已取消。请重试；如果问题持续存在，请查看诊断信息。',
     process: (pid: number) => `Runtime Host 进程 PID：${pid}`,
     manual: '如果重试仍然失败，请先确认没有需要保留的执行，再通过操作系统的进程管理工具停止该 PID。',
+    cause: '原因',
+    button: '好',
+  },
+  'zh-TW': {
+    title: '無法安全退出 Maka',
+    message: '本地 Runtime Host 未能安全停止，Maka 仍在執行。',
+    detail: '退出已取消。請重試；如果問題持續存在，請檢視診斷資訊。',
+    process: (pid: number) => `Runtime Host 程序 PID：${pid}`,
+    manual: '如果重試仍然失敗，請先確認沒有需要保留的執行，再透過作業系統的程序管理工具停止該 PID。',
     cause: '原因',
     button: '好',
   },

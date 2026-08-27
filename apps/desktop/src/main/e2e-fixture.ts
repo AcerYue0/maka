@@ -124,7 +124,9 @@ function parseThemeFlag(raw: string | undefined): 'light' | 'dark' | 'auto' | nu
 
 function parseLocaleFlag(raw: string | undefined): UiLocale | null {
   const normalized = raw?.trim().toLowerCase();
-  return normalized === 'zh' || normalized === 'en' ? normalized : null;
+  return normalized === 'zh-CN' || normalized === 'zh-TW' || normalized === 'en'
+    ? normalized
+    : null;
 }
 
 function parseTimezoneFlag(raw: string | undefined): string | null {

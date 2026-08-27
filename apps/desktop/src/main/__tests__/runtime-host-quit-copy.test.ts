@@ -33,7 +33,7 @@ const failure = new DesktopLocalHostRetirementError(
   { cause: new Error('writer release timed out') },
 );
 
-for (const locale of ['en', 'zh'] as const) {
+for (const locale of ['en', 'zh-CN'] as const) {
   test(`quit failure copy exposes actionable Host facts in ${locale}`, () => {
     const dialog = buildRuntimeHostQuitFailureDialog(failure, locale);
 
@@ -46,7 +46,7 @@ for (const locale of ['en', 'zh'] as const) {
 
 test('manual recovery copy names a cross-platform process-management concept', () => {
   const english = buildRuntimeHostQuitFailureDialog(failure, 'en').detail ?? '';
-  const chinese = buildRuntimeHostQuitFailureDialog(failure, 'zh').detail ?? '';
+  const chinese = buildRuntimeHostQuitFailureDialog(failure, 'zh-CN').detail ?? '';
 
   assert.match(english, /operating system's process-management tool/);
   assert.match(chinese, /操作系统的进程管理工具/);

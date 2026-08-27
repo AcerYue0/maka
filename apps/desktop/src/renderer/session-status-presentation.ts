@@ -97,7 +97,7 @@ export function normalizeSessionSummaryForDisplay<T extends SessionSummary>(sess
  * the UI; they just fall through to the catch-all until the mapping
  * is extended.
  */
-export function describeTurnErrorClass(errorClass: string | undefined, locale: UiLocale = 'zh'): string {
+export function describeTurnErrorClass(errorClass: string | undefined, locale: UiLocale = 'zh-CN'): string {
   const copy = getDesktopConversationCopy(locale).turnError;
   if (!errorClass) return copy.unknown;
   const reasonDescription = describeSessionErrorReason(errorClass, locale);
@@ -147,7 +147,7 @@ export interface FailedTurnRecoveryInput {
  * do not ask the user to blindly retry if a tool already ran or partial output
  * was retained.
  */
-export function deriveFailedTurnRecovery(input: FailedTurnRecoveryInput, locale: UiLocale = 'zh'): FailedTurnRecoveryPresentation {
+export function deriveFailedTurnRecovery(input: FailedTurnRecoveryInput, locale: UiLocale = 'zh-CN'): FailedTurnRecoveryPresentation {
   const copy = getDesktopConversationCopy(locale).turnError.recovery;
   const lower = input.errorClass?.toLowerCase() ?? '';
   if (lower === SANDBOX_BOUNDARY_RESTART_CLOSURE_CLASS) {

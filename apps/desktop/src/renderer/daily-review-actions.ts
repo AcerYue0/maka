@@ -30,5 +30,5 @@ export function dailyReviewExportDefaultName(
 }
 
 export function dailyReviewActionErrorMessage(error: unknown, fallback: string, locale: UiLocale): string {
-  return locale === 'zh' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
+  return locale !== 'en' ? generalizedErrorMessageChinese(error, fallback) : generalizedErrorMessage(error, fallback);
 }
