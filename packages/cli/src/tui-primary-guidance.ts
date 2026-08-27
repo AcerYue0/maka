@@ -104,6 +104,7 @@ const TUI_PRIMARY_GUIDANCE = {
       goal: '檢視自主目標狀態',
       graph: '檢視、啟用、停用 Graph 模式，或執行一次 Graph 任務',
       help: '檢視命令和快捷鍵',
+      mcp: '檢視用戶端管理的 MCP 伺服器與工具發佈狀態',
       model: '選擇模型',
       move: '將目前會話移到其他目錄',
       new: '建立會話',

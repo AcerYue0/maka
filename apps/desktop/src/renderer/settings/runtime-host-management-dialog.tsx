@@ -103,6 +103,8 @@ export function RuntimeHostManagementDialog(props: {
   const [coordinationRelays, setCoordinationRelays] = useState('');
   const nextDirectoryRootId = useRef(1);
   const logsRef = useRef<HTMLPreElement>(null);
+  const localizedError = (message: string): string =>
+    settingsActionErrorMessage(new Error(message), locale);
 
   const profile = props.profile;
   useEffect(() => {
@@ -135,7 +137,7 @@ export function RuntimeHostManagementDialog(props: {
           reconcileDirectoryPolicy(response.service);
           shouldLoadUpdatePolicy = response.service.state !== 'not_installed';
         }
-        else if (response.kind === 'error') setError(response.error.message);
+        else if (response.kind === 'error') setError(localizedError(response.error.message));
         else setUninstalledRoot(response.retainedStateRoot);
       } catch (failure) {
         if (!disposed) setError(settingsActionErrorMessage(failure, locale));
@@ -185,9 +187,10 @@ export function RuntimeHostManagementDialog(props: {
     try {
       const response = await window.maka.runtimeHostManagement.run(profile.id, action);
       if (response.kind === 'error') {
+        const message = localizedError(response.error.message);
         setUpdatePolicy(undefined);
-        setError(response.error.message);
-        toast.error(copy.managementActionFailed, response.error.message);
+        setError(message);
+        toast.error(copy.managementActionFailed, message);
         return;
       }
       if (response.kind === 'uninstalled') {
@@ -287,9 +290,10 @@ export function RuntimeHostManagementDialog(props: {
         allowInterruptActiveTasks,
       );
       if (response.kind === 'error') {
+        const message = localizedError(response.error.message);
         setUpdatePolicy(undefined);
-        setError(response.error.message);
-        toast.error(copy.managementActionFailed, response.error.message);
+        setError(message);
+        toast.error(copy.managementActionFailed, message);
         return;
       }
       if (response.kind === 'uninstalled') {
@@ -374,8 +378,9 @@ export function RuntimeHostManagementDialog(props: {
         allowInterruptActiveTasks,
       );
       if (response.kind === 'error') {
-        setError(response.error.message);
-        toast.error(copy.managementActionFailed, response.error.message);
+        const message = localizedError(response.error.message);
+        setError(message);
+        toast.error(copy.managementActionFailed, message);
         return;
       }
       if (response.kind === 'uninstalled' || response.action !== 'configure') {
@@ -457,9 +462,10 @@ export function RuntimeHostManagementDialog(props: {
     try {
       const response = await window.maka.runtimeHostManagement.reconcileUpdate(profile.id);
       if (response.kind === 'error') {
+        const message = localizedError(response.error.message);
         setUpdatePolicy(undefined);
-        setUpdatePolicyError(response.error.message);
-        toast.error(copy.managementActionFailed, response.error.message);
+        setUpdatePolicyError(message);
+        toast.error(copy.managementActionFailed, message);
         return;
       }
       setLastUpdateOutcome(response.reconciliation);
@@ -499,9 +505,9 @@ export function RuntimeHostManagementDialog(props: {
   function applyReconnectWarning(
     reconnectError: { readonly message: string } | undefined,
   ): void {
-    setReconnectWarning(reconnectError?.message);
+    setReconnectWarning(reconnectError ? localizedError(reconnectError.message) : undefined);
     if (reconnectError) {
-      toast.warning(copy.managementReconnectFailed, reconnectError.message);
+      toast.warning(copy.managementReconnectFailed, localizedError(reconnectError.message));
     }
   }
 

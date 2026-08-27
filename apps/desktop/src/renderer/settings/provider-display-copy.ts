@@ -66,12 +66,12 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   deepseek: {
     'zh-CN': { name: 'DeepSeek', description: 'DeepSeek 官方接入', badge: 'API' },
-    'zh-TW': { name: 'DeepSeek', description: 'DeepSeek 官方接入', badge: 'API' },
+    'zh-TW': { name: 'DeepSeek', description: 'DeepSeek 官方 API 連線', badge: 'API' },
     en: { name: 'DeepSeek', description: 'Official DeepSeek API access.', badge: 'API' },
   },
   moonshot: {
     'zh-CN': { name: 'Moonshot', description: 'Moonshot 官方接入', badge: 'API' },
-    'zh-TW': { name: 'Moonshot', description: 'Moonshot 官方接入', badge: 'API' },
+    'zh-TW': { name: 'Moonshot', description: 'Moonshot 官方 API 連線', badge: 'API' },
     en: { name: 'Moonshot', description: 'Official Moonshot API access.', badge: 'API' },
   },
   'zai-coding-plan': {
@@ -96,32 +96,32 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   anthropic: {
     'zh-CN': { name: 'Anthropic', description: 'Anthropic 官方接入', badge: 'API' },
-    'zh-TW': { name: 'Anthropic', description: 'Anthropic 官方接入', badge: 'API' },
+    'zh-TW': { name: 'Anthropic', description: 'Anthropic 官方 API 連線', badge: 'API' },
     en: { name: 'Anthropic', description: 'Official Anthropic API access.', badge: 'API' },
   },
   openai: {
     'zh-CN': { name: 'OpenAI', description: 'OpenAI 官方接入', badge: 'API' },
-    'zh-TW': { name: 'OpenAI', description: 'OpenAI 官方接入', badge: 'API' },
+    'zh-TW': { name: 'OpenAI', description: 'OpenAI 官方 API 連線', badge: 'API' },
     en: { name: 'OpenAI', description: 'Official OpenAI API access.', badge: 'API' },
   },
   google: {
     'zh-CN': { name: 'Google Gemini', description: 'Google AI Studio 接入', badge: 'API' },
-    'zh-TW': { name: 'Google Gemini', description: 'Google AI Studio 接入', badge: 'API' },
+    'zh-TW': { name: 'Google Gemini', description: 'Google AI Studio API 連線', badge: 'API' },
     en: { name: 'Google Gemini', description: 'Google AI Studio API access.', badge: 'API' },
   },
   xai: {
     'zh-CN': { name: 'xAI', description: 'xAI 官方接入，Grok 系列模型', badge: 'API' },
-    'zh-TW': { name: 'xAI', description: 'xAI 官方接入，Grok 系列模型', badge: 'API' },
+    'zh-TW': { name: 'xAI', description: 'xAI 官方 API 連線，支援 Grok 系列模型', badge: 'API' },
     en: { name: 'xAI', description: 'Official xAI API access for Grok models.', badge: 'API' },
   },
   zai: {
     'zh-CN': { name: 'Z.AI', description: '智谱官方接入，GLM 系列模型', badge: 'API' },
-    'zh-TW': { name: 'Z.AI', description: '智譜官方接入，GLM 系列模型', badge: 'API' },
+    'zh-TW': { name: 'Z.AI', description: '智譜官方 API 連線，支援 GLM 系列模型', badge: 'API' },
     en: { name: 'Z.AI', description: 'Official Z.AI API access for GLM models.', badge: 'API' },
   },
   xiaomi: {
     'zh-CN': { name: 'Xiaomi', description: '小米官方接入，MiMo 系列模型', badge: 'API' },
-    'zh-TW': { name: 'Xiaomi', description: '小米官方接入，MiMo 系列模型', badge: 'API' },
+    'zh-TW': { name: 'Xiaomi', description: '小米官方 API 連線，支援 MiMo 系列模型', badge: 'API' },
     en: { name: 'Xiaomi', description: 'Official Xiaomi API access for MiMo models.', badge: 'API' },
   },
   'xiaomi-token-plan-cn': {
@@ -146,7 +146,7 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   mistral: {
     'zh-CN': { name: 'Mistral', description: 'Mistral 官方接入', badge: 'API' },
-    'zh-TW': { name: 'Mistral', description: 'Mistral 官方接入', badge: 'API' },
+    'zh-TW': { name: 'Mistral', description: 'Mistral 官方 API 連線', badge: 'API' },
     en: { name: 'Mistral', description: 'Official Mistral API access.', badge: 'API' },
   },
   togetherai: {
@@ -191,17 +191,17 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   nvidia: {
     'zh-CN': { name: 'NVIDIA', description: 'NVIDIA 官方托管模型接入', badge: 'API' },
-    'zh-TW': { name: 'NVIDIA', description: 'NVIDIA 官方託管模型接入', badge: 'API' },
+    'zh-TW': { name: 'NVIDIA', description: 'NVIDIA 官方託管模型服務', badge: 'API' },
     en: { name: 'NVIDIA', description: 'NVIDIA-hosted models API access.', badge: 'API' },
   },
   'tencent-tokenhub': {
     'zh-CN': { name: 'Tencent TokenHub', description: '腾讯云 TokenHub 按量接入，混元等模型', badge: 'API' },
-    'zh-TW': { name: 'Tencent TokenHub', description: '騰訊雲 TokenHub 按量接入，混元等模型', badge: 'API' },
+    'zh-TW': { name: 'Tencent TokenHub', description: '騰訊雲 TokenHub 按量計費模型服務，包含混元等模型', badge: 'API' },
     en: { name: 'Tencent TokenHub', description: 'Tencent Cloud TokenHub pay-as-you-go access.', badge: 'API' },
   },
   stepfun: {
     'zh-CN': { name: 'StepFun 中国站', description: '阶跃星辰官方接入 · 中国站', badge: 'API' },
-    'zh-TW': { name: 'StepFun 中國站', description: '階躍星辰官方接入 · 中國站', badge: 'API' },
+    'zh-TW': { name: 'StepFun 中國站', description: '階躍星辰官方 API 連線 · 中國站', badge: 'API' },
     en: { name: 'StepFun (China)', description: 'Official StepFun China API access.', badge: 'API' },
   },
   'tencent-coding-plan': {
@@ -211,12 +211,12 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   'stepfun-ai': {
     'zh-CN': { name: 'StepFun 国际站', description: '阶跃星辰官方接入 · 国际站', badge: 'API' },
-    'zh-TW': { name: 'StepFun 國際站', description: '階躍星辰官方接入 · 國際站', badge: 'API' },
+    'zh-TW': { name: 'StepFun 國際站', description: '階躍星辰官方 API 連線 · 國際站', badge: 'API' },
     en: { name: 'StepFun (Global)', description: 'Official StepFun Global API access.', badge: 'API' },
   },
   'volcengine-ark': {
     'zh-CN': { name: '火山方舟', description: '火山引擎官方接入，豆包等模型', badge: 'API' },
-    'zh-TW': { name: '火山方舟', description: '火山引擎官方接入，豆包等模型', badge: 'API' },
+    'zh-TW': { name: '火山方舟', description: '火山引擎官方 API 連線，包含豆包等模型', badge: 'API' },
     en: { name: 'Volcengine Ark (China)', description: 'Volcengine Ark direct API access in China.', badge: 'API' },
   },
   'volcengine-coding-plan': {
@@ -246,12 +246,12 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   cohere: {
     'zh-CN': { name: 'Cohere', description: 'Cohere 官方接入', badge: 'API' },
-    'zh-TW': { name: 'Cohere', description: 'Cohere 官方接入', badge: 'API' },
+    'zh-TW': { name: 'Cohere', description: 'Cohere 官方 API 連線', badge: 'API' },
     en: { name: 'Cohere', description: 'Official Cohere Chat API access.', badge: 'API' },
   },
   vercel: {
     'zh-CN': { name: 'Vercel AI Gateway', description: '一个密钥接入多家托管模型', badge: '网关' },
-    'zh-TW': { name: 'Vercel AI Gateway', description: '一個金鑰接入多家託管模型', badge: '閘道器' },
+    'zh-TW': { name: 'Vercel AI Gateway', description: '使用一組金鑰連線多家託管模型', badge: '閘道器' },
     en: { name: 'Vercel AI Gateway', description: 'One API key for hosted models with exact creator/model ids.', badge: 'Gateway' },
   },
   'stepfun-ai-step-plan': {
@@ -261,7 +261,7 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   'cloudflare-workers-ai': {
     'zh-CN': { name: 'Cloudflare Workers AI', description: 'Cloudflare 托管模型，账户级接入', badge: 'API' },
-    'zh-TW': { name: 'Cloudflare Workers AI', description: 'Cloudflare 託管模型，帳號級接入', badge: 'API' },
+    'zh-TW': { name: 'Cloudflare Workers AI', description: 'Cloudflare 託管模型，使用帳號層級連線', badge: 'API' },
     en: { name: 'Cloudflare Workers AI', description: 'Cloudflare-hosted models over the account-scoped API.', badge: 'API' },
   },
   huggingface: {
@@ -276,7 +276,7 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   zenmux: {
     'zh-CN': { name: 'ZenMux', description: '模型路由网关，一个密钥接入多家模型', badge: '网关' },
-    'zh-TW': { name: 'ZenMux', description: '模型路由閘道器，一個金鑰接入多家模型', badge: '閘道器' },
+    'zh-TW': { name: 'ZenMux', description: '模型路由閘道器，使用一組金鑰連線多家模型', badge: '閘道器' },
     en: { name: 'ZenMux', description: 'One API key for routed models with exact creator/model ids.', badge: 'Gateway' },
   },
   opencode: {
@@ -301,17 +301,17 @@ export const PROVIDER_DISPLAY_COPY = {
   },
   openrouter: {
     'zh-CN': { name: 'OpenRouter', description: '一个密钥接入各大模型厂商 · OpenAI 兼容', badge: '聚合' },
-    'zh-TW': { name: 'OpenRouter', description: '一個金鑰接入各大模型廠商 · OpenAI 相容', badge: '聚合' },
+    'zh-TW': { name: 'OpenRouter', description: '使用一組金鑰連線各大模型廠商 · OpenAI 相容', badge: '聚合' },
     en: { name: 'OpenRouter', description: 'One API key across all major model labs · OpenAI-compatible', badge: 'Aggregator' },
   },
   alibaba: {
     'zh-CN': { name: 'Alibaba', description: '阿里云百炼接入，通义千问 Qwen 模型', badge: 'API' },
-    'zh-TW': { name: 'Alibaba', description: '阿里雲百鍊接入，通義千問 Qwen 模型', badge: 'API' },
+    'zh-TW': { name: 'Alibaba', description: '阿里雲百鍊 API 連線，支援通義千問 Qwen 模型', badge: 'API' },
     en: { name: 'Alibaba', description: 'Alibaba Cloud API access for Qwen models.', badge: 'API' },
   },
   'alibaba-cn': {
     'zh-CN': { name: 'Alibaba 中国站', description: '阿里云百炼中国站接入，通义千问 Qwen 模型', badge: 'API' },
-    'zh-TW': { name: 'Alibaba 中國站', description: '阿里雲百鍊中國站接入，通義千問 Qwen 模型', badge: 'API' },
+    'zh-TW': { name: 'Alibaba 中國站', description: '阿里雲百鍊中國站 API 連線，支援通義千問 Qwen 模型', badge: 'API' },
     en: {
       name: 'Alibaba (China)',
       description: 'Alibaba Cloud China-platform API access for Qwen models.',
@@ -342,7 +342,7 @@ export const PROVIDER_DISPLAY_COPY = {
   // accounts section and on connection rows).
   'github-copilot': {
     'zh-CN': { name: 'GitHub Copilot', description: 'GitHub Copilot 订阅接入，复用本机 GitHub 登录', badge: 'Account' },
-    'zh-TW': { name: 'GitHub Copilot', description: 'GitHub Copilot 訂閱接入，複用本機 GitHub 登入', badge: 'Account' },
+    'zh-TW': { name: 'GitHub Copilot', description: '透過 GitHub Copilot 訂閱連線，沿用本機 GitHub 登入', badge: 'Account' },
     en: { name: 'GitHub Copilot', description: 'GitHub Copilot subscription access using an existing GitHub login.', badge: 'Account' },
   },
   'claude-subscription': {

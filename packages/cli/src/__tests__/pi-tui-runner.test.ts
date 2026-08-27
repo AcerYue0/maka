@@ -6368,7 +6368,7 @@ describe('Maka Pi TUI runner', () => {
       model: 'claude-sonnet-4-5',
       connectionSlug: 'claude-subscription',
       permissionMode: 'ask',
-      locale: 'zh',
+      locale: 'zh-CN',
       terminal,
     });
 

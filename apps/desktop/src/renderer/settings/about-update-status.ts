@@ -26,7 +26,10 @@ type AboutCopy = SettingsPreferencesCopy['about'];
 export function aboutUpdateStatusDetail(
   status: AppUpdateStatus | null,
   copy: AboutCopy,
-  options: { readonly isDevBuild: boolean },
+  options: {
+    readonly isDevBuild: boolean;
+    readonly errorDetail?: (message: string) => string;
+  },
 ): string {
   if (options.isDevBuild) return copy.updateDevBuildHelp;
   if (!status || status.state === 'idle') return copy.updateIdle;
@@ -38,5 +41,7 @@ export function aboutUpdateStatusDetail(
   }
   if (status.state === 'downloaded') return copy.updateDownloaded(status.latestVersion);
   if (status.state === 'installing') return copy.updateInstalling(status.latestVersion);
-  return copy.updateCheckFailedDetail(status.message);
+  return copy.updateCheckFailedDetail(
+    options.errorDetail ? options.errorDetail(status.message) : status.message,
+  );
 }

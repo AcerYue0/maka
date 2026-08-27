@@ -72,7 +72,7 @@ const SETTINGS_USAGE_COPY = {
       providersAria: '使用統計供應商統計表', modelsAria: '使用統計模型統計表', toolsAria: '使用統計工具統計表', pricingAria: '使用統計定價設定表', requestsAria: '使用統計請求日誌表',
       providerHeaders: ['供應商', '請求', 'Token', '費用'], modelHeaders: ['模型', '請求', 'Token', '費用'], toolHeaders: ['工具', '呼叫', '成功', '錯誤', '平均耗時'],
       pricingHeaders: ['供應商', '模型', '輸入 / 1M', '輸出 / 1M'], requestHeaders: ['時間', '型別', '物件', '任務', 'Token', '費用', '延遲', '狀態'],
-      noPricing: '暫無定價覆蓋設定', modelKind: '模型', toolKind: '工具', openSession: (label) => `開啟 ${label}`, success: '成功', error: '錯誤',
+      noPricing: '暫無定價覆蓋設定', modelKind: '模型', toolKind: '工具', openSession: (label) => `開啟 ${label}`, untitledSession: '未命名會話', success: '成功', error: '錯誤',
       providerEmptyTitle: '暫無供應商用量', providerEmptyBody: '完成一次模型請求後，這裡會按供應商聚合請求數、Token 與費用。',
       modelEmptyTitle: '暫無模型用量', modelEmptyBody: '完成一次模型請求後，這裡會按模型聚合請求數、Token 與費用。',
       toolEmptyTitle: '暫無工具呼叫', toolEmptyBody: '智慧體呼叫工具後，這裡會按工具聚合呼叫次數、成功、錯誤與平均耗時。',

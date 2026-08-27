@@ -200,7 +200,7 @@ describe('Maka Pi TUI transcript', () => {
     assert.equal(
       stripAnsi(
         renderMakaPiStatusLine(
-          { ...meta(), uiLocale: 'zh', sideConversation: { view: 'side' } },
+          { ...meta(), uiLocale: 'zh-CN', sideConversation: { view: 'side' } },
           200,
         ),
       ),
@@ -219,7 +219,7 @@ describe('Maka Pi TUI transcript', () => {
           renderMakaPiStatusLine(
             {
               ...meta(),
-              uiLocale: 'zh',
+              uiLocale: 'zh-CN',
               sideConversation: { view: 'side', parentStatus },
             },
             200,
@@ -231,7 +231,7 @@ describe('Maka Pi TUI transcript', () => {
     assert.match(
       stripAnsi(
         renderMakaPiStatusLine(
-          { ...meta(), uiLocale: 'zh', sideConversation: { view: 'parent' } },
+          { ...meta(), uiLocale: 'zh-CN', sideConversation: { view: 'parent' } },
           200,
         ),
       ),

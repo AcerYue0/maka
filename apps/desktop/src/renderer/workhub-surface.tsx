@@ -674,7 +674,15 @@ function workHubCopy(locale: UiLocale) {
       coordinationFailedTitle: 'WorkHub 暫時無法啟動',
       coordinationFailedBody: '請檢查目前 Runtime Host 的預設模型設定，然後重試。',
       retry: '重試',
-      submitFailed: '輸入未能送達，請重試。', scrollToBottom: '捲動到底部', archived: '已封存',
+      submitFailed: '輸入未能送達，請重試。',
+      submitFailures: {
+        candidates_changed: '工作清單已變更，請重新傳送以使用最新目標。',
+        linked_correction_unavailable: '跨 Session 更正將於持久委派關聯完成後開放；請先開啟原 Session 並停止目前工作。',
+        target_waiting: '目標 Session 正在等待你的處理；請先開啟並完成該互動。',
+        action_changed: '這次操作已變更，請重新傳送。',
+        delivery_failed: '輸入未能送達，請重試。',
+      },
+      scrollToBottom: '捲動到底部', archived: '已封存',
       states: { active: '使用中', running: '進行中', waiting_for_user: '等待你', blocked: '受阻', aborted: '已中止' },
       turnStates: { running: '進行中', completed: '已完成', aborted: '已中止', failed: '失敗' },
     } as const;

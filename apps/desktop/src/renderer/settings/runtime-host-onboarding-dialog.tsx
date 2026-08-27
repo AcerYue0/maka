@@ -32,6 +32,7 @@ import {
   RuntimeHostProjectDirectoryEditor,
   type ProjectDirectoryRootDraft,
 } from './runtime-host-project-directory-editor.js';
+import { settingsActionErrorMessage } from './settings-error-copy.js';
 
 export function RuntimeHostOnboardingDialog(props: {
   readonly isOpen: boolean;
@@ -129,7 +130,10 @@ export function RuntimeHostOnboardingDialog(props: {
           <LayoutContent padding={4}>
             <FormLayout>
               {snapshot.kind === 'failed' ? (
-                <Banner status="error" title={snapshot.message} />
+                <Banner
+                  status="error"
+                  title={settingsActionErrorMessage(snapshot.message, locale)}
+                />
               ) : null}
               {snapshot.kind === 'complete' ? (
                 <Banner status="success" title={copy.setupComplete} />
