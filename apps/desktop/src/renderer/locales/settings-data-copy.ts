@@ -72,7 +72,7 @@ const SETTINGS_DATA_COPY = {
       connections: { label: '模型連線', detail: '供應商連線與預設模型（不含金鑰）' },
       settings: { label: '應用設定', detail: '常規、搜尋、機器人、代理等設定' },
       memory: { label: '本地記憶', detail: '本機 MEMORY.md 的內容' },
-      credentials: { label: '憑據（API 金鑰、令牌）', detail: '模型金鑰與訂閱令牌等敏感資訊', sensitive: true },
+      credentials: { label: '憑據（API 金鑰、權杖）', detail: '模型金鑰與訂閱權杖等敏感資訊', sensitive: true },
     },
     importSummary: {
       connections: (created, overwritten, skipped) => `連線 新增${created}·覆蓋${overwritten}·跳過${skipped}`,
@@ -88,7 +88,7 @@ const SETTINGS_DATA_COPY = {
       history: '輸入歷史', historyDetail: '上箭頭 / 下箭頭調出的已傳送提示詞記錄，儲存在本機、重啟後仍在。清空後無法恢復。',
     },
     actionsAria: '工作區資料操作', opening: '開啟中…', openWorkspace: '開啟工作區資料夾', copying: '複製中…', copyPath: '複製路徑', clearing: '清空中…', clearHistory: '清空輸入歷史',
-    backupTitle: '備份與恢復', backupNotice: '本機資料儲存在工作區。需要備份時先退出 Maka，再複製整個目錄；恢復時替換同一路徑後重啟。模型連線憑據隨工作區恢復後需要重新測試；訂閱帳號令牌通常需要重新登入。',
+    backupTitle: '備份與恢復', backupNotice: '本機資料儲存在工作區。需要備份時先退出 Maka，再複製整個目錄；恢復時替換同一路徑後重啟。模型連線憑據隨工作區恢復後需要重新測試；訂閱帳號權杖通常需要重新登入。',
     pathLoadFailed: (error) => `無法載入工作區路徑：${error}`, configAria: '設定匯入匯出', configTitle: '設定匯入匯出',
     configHelp: '勾選要匯出的內容，生成一個 JSON 備份檔案；換機或重灌時可再匯入。預設不含金鑰。', categoryAria: '選擇匯出內容',
     sensitiveWarning: '⚠️ 金鑰將以明文寫入匯出檔案。任何拿到該檔案的人都能使用這些金鑰，請妥善保管、不要分享。',

@@ -149,12 +149,12 @@ const MCP_COPY = {
     page: {
       actionsAria: 'MCP 操作', refreshing: '重新整理中…', refresh: '重新整理', add: '新增 MCP',
       metaInstalled: (count) => `${count} 個已安裝`, metaErrors: (count) => `${count} 個連線異常`,
-      searchMatches: (count) => `${count} 個匹配`,
+      searchMatches: (count) => `${count} 個符合`,
       workspaceAria: 'MCP 市場與已安裝項', toolbarAria: 'MCP 瀏覽操作', setupTitle: '把 Maka 連線到你的工作環境', setupDescription: '從精選模板開始，或新增任意 stdio、Streamable HTTP 與 SSE server。',
       localStdio: '本地 stdio', categoriesAria: 'MCP 分類', market: '市場', installed: '已安裝',
-      searchPlaceholder: '搜尋 MCP…', searchAria: '搜尋 MCP', noMarket: '沒有找到匹配的 MCP', noMarketDetail: (query) => `換一個關鍵詞，或清空「${query}」檢視全部模板。`,
+      searchPlaceholder: '搜尋 MCP…', searchAria: '搜尋 MCP', noMarket: '沒有找到符合的 MCP', noMarketDetail: (query) => `換一個關鍵詞，或清空「${query}」檢視全部模板。`,
       clearSearch: '清空搜尋', loading: '正在讀取 MCP 設定…', noInstalled: '還沒有安裝 MCP', noInstalledDetail: '從市場選擇模板，或手動新增你自己的 server。',
-      browseMarket: '瀏覽市場', noInstalledMatch: '沒有匹配的已安裝 MCP', noInstalledMatchDetail: (query) => `換一個關鍵詞，或清空「${query}」檢視全部已安裝項。`,
+      browseMarket: '瀏覽市場', noInstalledMatch: '沒有符合的已安裝 MCP', noInstalledMatchDetail: (query) => `換一個關鍵詞，或清空「${query}」檢視全部已安裝項。`,
     },
     detail: {
       label: '伺服器詳情', enabled: '啟用', transport: '傳輸方式', endpoint: '端點',

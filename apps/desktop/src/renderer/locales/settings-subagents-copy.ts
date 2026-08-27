@@ -250,7 +250,7 @@ const SETTINGS_SUBAGENTS_COPY_BY_LOCALE = {
       rejected: '設定沒有被儲存。請確認名稱長度和設定數量都在上限之內。',
     },
     profiles: {
-      local_read: { label: '程式碼閱讀', description: '只讀訪問目前工作區，適合搜尋、理解和總結程式碼。' },
+      local_read: { label: '程式碼閱讀', description: '只讀存取目前工作區，適合搜尋、理解和總結程式碼。' },
       web_research: { label: '網路研究', description: '只使用聯網搜尋，適合查詢外部資料和最新資訊。' },
       implementation: { label: '實現程式碼', description: '可以讀寫檔案並執行命令，在隔離 worktree 中完成改動。' },
     },

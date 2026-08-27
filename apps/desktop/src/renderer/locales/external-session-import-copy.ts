@@ -134,7 +134,7 @@ const COPY = {
     sourceNames: { codex: 'Codex', 'claude-code': 'Claude Code' },
     includeArchived: '包含已歸檔的對話',
     searchLabel: '搜尋',
-    searchHelp: '匹配對話標題與專案路徑。留空顯示全部。',
+    searchHelp: '符合對話標題與專案路徑。留空顯示全部。',
     searchPlaceholder: '標題或路徑的一部分',
     searchEmpty: (term) => `沒有標題或路徑包含「${term}」的對話。`,
     loading: '正在讀取外部對話…',

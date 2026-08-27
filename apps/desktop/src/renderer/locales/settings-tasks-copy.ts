@@ -97,7 +97,7 @@ const SETTINGS_TASKS_COPY_BY_LOCALE = {
     purgeFailedTitle: '刪除任務失敗',
     purgeFailedBody: (count: number) => `${count} 條仍在，請重試。`,
     purgeUnverified: '任務已刪除，但無法讀取列表確認結果。請重新開啟本頁檢視。',
-    noMatchTitle: '沒有匹配的任務',
+    noMatchTitle: '沒有符合的任務',
     noMatchBody: '換個關鍵詞試試。',
     moreActions: (name: string) => `「${name}」的更多操作`,
     restore: '恢復',

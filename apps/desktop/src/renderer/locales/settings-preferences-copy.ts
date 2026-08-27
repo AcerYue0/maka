@@ -362,7 +362,7 @@ const SETTINGS_PREFERENCES_COPY_BY_LOCALE = {
     },
     appearance: {
       saveFailed: '儲存外觀設定失敗', theme: '主題', palette: '調色盤',
-      themeOptions: { light: { label: '淺色', help: '始終使用淺色介面。' }, dark: { label: '深色', help: '始終使用深色介面。' }, auto: { label: '跟隨系統', help: '匹配系統目前的淺色或深色偏好。' } },
+      themeOptions: { light: { label: '淺色', help: '始終使用淺色介面。' }, dark: { label: '深色', help: '始終使用深色介面。' }, auto: { label: '跟隨系統', help: '符合系統目前的淺色或深色偏好。' } },
       paletteLabels: { default: '預設', onedark: 'One Dark', 'catppuccin-mocha': 'Catppuccin Mocha', 'tokyo-night': 'Tokyo Night', nord: 'Nord', coral: '珊瑚', azure: '湖藍', forest: '森林', dusk: '暮光', sand: '沙金', mono: '極簡灰' },
       paletteHelp: { default: 'Maka 品牌藍強調色', onedark: '編輯器經典深色', 'catppuccin-mocha': '紫調柔和深色', 'tokyo-night': '深藍主題', nord: '北歐冷色', coral: '暖粉 / 珊瑚強調色', azure: '湖藍強調色，乾淨冷靜', forest: '深苔綠與暖蜂蜜強調色', dusk: '深紫羅蘭與冷調畫布', sand: '琥珀沙金與暖奶白', mono: '純灰階，無彩色干擾' },
       paletteGroups: { editor: '編輯器主題', product: '產品色調' },
@@ -404,7 +404,7 @@ const SETTINGS_PREFERENCES_COPY_BY_LOCALE = {
       loadFailed: '無法載入自訂寵物', importFailed: '匯入寵物失敗', selectFailed: '切換寵物失敗', removeFailed: '刪除寵物失敗',
       importErrors: { invalid_directory: '所選資料夾無效。', invalid_manifest: 'pet.json 不符合 maka.pet/v1 格式。', invalid_asset: '精靈圖缺失、無效或超出限制。', already_installed: '已經匯入了相同 ID 的寵物。', read_failed: '無法讀取所選資料夾。' },
       selectErrors: { invalid_id: '寵物 ID 無效。', not_found: '該寵物已不在本地寵物庫中。', read_failed: '無法讀取寵物庫。', write_failed: '無法儲存寵物選擇。' },
-      removeErrors: { invalid_id: '寵物 ID 無效。', remove_failed: '無法刪除本地寵物包。' },
+      removeErrors: { invalid_id: '寵物 ID 無效。', remove_failed: '無法刪除本機寵物包。' },
     },
     general: {
       incognito: '隱身模式', incognitoHelp: '開啟後暫停本地記憶讀寫、聯網搜尋和定時任務觸發。', enableIncognito: '啟用隱身模式', incognitoFailed: '隱身模式切換失敗', notifications: '完成時傳送系統通知', notificationsHelp: '視窗不在前臺時，在回答完成或出錯後傳送桌面通知。', notificationsFailed: '通知設定切換失敗', workspaceInstructions: '遵循專案指令', workspaceInstructionsHelp: '自動讀取每個專案中已有的 AGENTS.md、CLAUDE.md 或 GEMINI.md；檔案仍由各自專案管理。', workspaceInstructionsFailed: '專案指令設定切換失敗', workHub: '啟用 WorkHub', workHubHelp: '在一個入口檢視已有工作，並將新輸入保守地送往普通任務。', workHubFailed: 'WorkHub 設定切換失敗', updateFailed: '設定未生效，請稍後重試。',
@@ -413,7 +413,7 @@ const SETTINGS_PREFERENCES_COPY_BY_LOCALE = {
       proxy: '代理伺服器', proxyHelp: '為 AI 模型請求設定網路代理', enableProxy: '啟用代理伺服器', saveNetworkFailed: '儲存網路設定失敗', proxyProtocol: '代理協議', serverAddress: '伺服器地址', port: '埠', proxyAuth: '代理認證', proxyAuthHelp: '需要使用者名稱和密碼時開啟。', enableProxyAuth: '啟用代理認證', username: '使用者名稱', password: '密碼', bypassList: '代理白名單', bypassHelp: '這些域名將繞過代理直連，多個用逗號分隔。', autoBypass: (count) => `已自動新增 ${count} 個域名。代理僅作用於 AI 模型請求。`, testing: '測試中…', testCurrent: '測試目前設定', proxyReachable: '代理可達', proxyTestFailed: '代理測試失敗', proxyTestError: '代理測試出錯',
     },
     about: {
-      loadFailed: '載入關於資訊失敗', loading: '正在載入關於頁', unavailable: '無法載入關於資訊', copied: '已複製診斷資訊', pasteHint: '檢查內容後，可直接貼上到問題報告', copyFailed: '複製失敗', clipboardUnavailable: '剪貼簿不可用或被系統拒絕。', devBuild: '本地開發版', packagedBuild: '正式版', subtitle: '本地優先的 AI 助手 · 桌面端執行環境', privacyLabel: '隱私與安全', privacyTitle: '本地優先 · 隱私預設', privacyPoints: ['所有任務、設定、憑據和 Skill 指令檔案都保留在本機工作區。', '模型金鑰儲存在本機憑據檔案內；訂閱帳號令牌使用系統安全儲存。', 'Maka 不傳送使用遙測；只在你顯式啟用時與所選模型供應商通訊。', '高風險工具操作需要在任務內明示授權。', '每個任務都會在本機保留訊息、工具呼叫、權限決策與模式變更記錄。'], copying: '複製中…', copyDiagnostics: '複製診斷資訊', copyHelp: '複製版本、平臺、隱藏主目錄後的工作區路徑，以及近期脫敏的 Desktop 與 Runtime Host 日誌；僅寫入剪貼簿，不會自動上傳。', keyboardShortcuts: '鍵盤快捷鍵', keyboardShortcutsHelp: 'Maka 支援的全部快捷鍵一覽。', keyboardShortcutsOpen: '檢視', reportIssueLabel: '報告問題',
+      loadFailed: '載入關於資訊失敗', loading: '正在載入關於頁', unavailable: '無法載入關於資訊', copied: '已複製診斷資訊', pasteHint: '檢查內容後，可直接貼上到問題報告', copyFailed: '複製失敗', clipboardUnavailable: '剪貼簿不可用或被系統拒絕。', devBuild: '本地開發版', packagedBuild: '正式版', subtitle: '本地優先的 AI 助手 · 桌面端執行環境', privacyLabel: '隱私與安全', privacyTitle: '本地優先 · 隱私預設', privacyPoints: ['所有任務、設定、憑據和 Skill 指令檔案都保留在本機工作區。', '模型金鑰儲存在本機憑據檔案內；訂閱帳號權杖使用系統安全儲存。', 'Maka 不傳送使用遙測；只在你顯式啟用時與所選模型供應商通訊。', '高風險工具操作需要在任務內明示授權。', '每個任務都會在本機保留訊息、工具呼叫、權限決策與模式變更記錄。'], copying: '複製中…', copyDiagnostics: '複製診斷資訊', copyHelp: '複製版本、平臺、隱藏主目錄後的工作區路徑，以及近期脫敏的 Desktop 與 Runtime Host 記錄；僅寫入剪貼簿，不會自動上傳。', keyboardShortcuts: '鍵盤快捷鍵', keyboardShortcutsHelp: 'Maka 支援的全部快捷鍵一覽。', keyboardShortcutsOpen: '檢視', reportIssueLabel: '報告問題',
       updatesTitle: '軟體更新',
       checkForUpdates: '檢查更新',
       checkingForUpdates: '檢查中…',

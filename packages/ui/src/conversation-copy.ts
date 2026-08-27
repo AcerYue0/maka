@@ -597,21 +597,21 @@ const CONVERSATION_COPY = {
       mode: {
         explore: { label: '只讀', hint: '只讀搜尋，不寫檔案、不上網；需要時先問你。' },
         ask: { label: '自動', hint: '保護層內自動執行，越權先問你。' },
-        bypass: { label: '完全權限', hint: '直接訪問檔案和網路，僅限可信任務。' },
+        bypass: { label: '完全權限', hint: '直接存取檔案和網路，僅限可信任務。' },
       },
       modeAriaLabel: (label) => `權限模式：${label}`,
     },
     sandboxBoundary: {
-      title: '允許訪問工作區以外的內容？',
+      title: '允許存取工作區以外的內容？',
       access: { read: '讀取', write: '寫入' },
       scope: { exact: '僅此路徑', subtree: '目錄及子目錄' },
-      network: '網路訪問',
+      network: '網路存取',
       enabled: '已啟用',
       reject: '拒絕',
       allowSession: '本任務允許',
     },
     questions: { other: '其他', otherDescription: '輸入一個不同的答案。', otherAriaLabel: '其他答案', otherPlaceholder: '輸入你的答案', stop: '停止', stopping: '停止中…', previous: '上一題', submitting: '正在提交…', submit: '提交答案', next: '下一題' },
-    mentions: { noFiles: '未找到檔案', noSkills: '暫無技能', noCommandsOrSkills: '沒有匹配的命令或技能', filesAriaLabel: '工作區檔案', skillsAriaLabel: '技能', commandsAndSkillsAriaLabel: '命令和技能', commandsGroup: '命令', skillsGroup: 'Skills', loading: '載入中…' },
+    mentions: { noFiles: '未找到檔案', noSkills: '暫無技能', noCommandsOrSkills: '沒有符合的命令或技能', filesAriaLabel: '工作區檔案', skillsAriaLabel: '技能', commandsAndSkillsAriaLabel: '命令和技能', commandsGroup: '命令', skillsGroup: 'Skills', loading: '載入中…' },
     workspace: {
       choose: '選擇專案', current: '目前專案', addProject: '新增專案', noProject: '無專案', relink: '重新定位', unavailable: '不可用',
       chooseTitle: (branch) => branch ? `選擇專案 · ${branch}` : '選擇專案',
@@ -620,7 +620,7 @@ const CONVERSATION_COPY = {
     messages: {
       you: '你', assistant: 'Maka', processing: '正在處理…', continuing: '繼續中…', workingPhrases: ['正在琢磨…', '正在推敲…', '正在盤算…', '正在鑽研…', '正在忙活…', '正在梳理…', '正在打磨…', '正在鼓搗…', '正在醞釀…', '正在攻堅…', '正在權衡…', '正在拾掇…'], providerRetryScheduled: (seconds, attempt, maxAttempts) => `${formatRetryDelay(seconds, 'zh-TW')}後重試（${attempt}/${maxAttempts}）`, providerRetryStarted: (attempt, maxAttempts) => `正在重試（${attempt}/${maxAttempts}）`, providerRetryReason: { network: '網路中斷', provider_capacity: '模型服務暫時滿載', provider_unavailable: '模型服務暫時不可用', rate_limit: '觸發模型速率限制', timeout: '請求超時', unknown: '模型請求失敗' }, safeResumePending: '正在驗證…', safeResume: '安全恢復', thinking: '深度思考', truncated: '已截斷', copied: '已複製', copying: '複製中', copyFailed: '複製失敗', copy: '複製', editMessage: '編輯並重發', editMessageDisabledRunning: '目前回答仍在進行中，結束後再編輯', editMessageDisabledAttachments: '包含附件的歷史訊息暫不支援編輯並重發', editMessageDisabledQuotes: '包含引用的歷史訊息暫不支援編輯並重發', editMessageDisabledTransformedText: '透過顯式技能傳送的歷史訊息暫不支援編輯並重發',
       userAriaLabel: '你傳送的訊息', systemAriaLabel: '系統訊息', assistantAriaLabel: 'Maka 的回答', answerActionsAriaLabel: (context) => `回答操作${context ? `：${context}` : ''}`, answerActionAriaLabel: (action, context) => `${action}回答${context ? `：${context}` : ''}`, messageActionAriaLabel: (action, context) => `${action}訊息${context ? `：${context}` : ''}`, sourceAriaLabel: '本輪迴答的來源', derivativesAriaLabel: '本輪迴答的衍生', scheduledTaskTriggered: '定時任務觸發', scheduledTaskTitle: (id) => `由定時任務觸發 · ${id}`, legacyAutomationTriggered: '舊版自動化（僅歷史）', legacyAutomationTitle: (id) => `由舊版自動化觸發 · ${id} · 僅保留歷史，不會再次執行`, goalContinued: 'Goal 自動繼續', goalTitle: (id) => `由 Goal 繼續執行 · ${id}`, agentGraphTriggered: 'Agent Graph 自動繼續', agentGraphTitle: (graphId) => `由 Agent Graph 排程器觸發 · ${graphId}`,
-      thinkingTruncatedTitle: '部分 reasoning 已截斷；顯示的是最近的內容', outputTruncatedTitle: '助手輸出已超過單次回合上限，超出部分未渲染。如需完整內容請重新生成或檢視持久化的任務日誌。', removeAttachmentAriaLabel: (name) => `移除 ${name}`, quoteLabel: '引用', quoteExpandAriaLabel: '展開引用全文', quoteCollapseAriaLabel: '收起引用', removeQuoteAriaLabel: '移除引用', aborted: '(已中斷)', abortedByStop: '(已中斷 · 由停止按鈕觸發)',
+      thinkingTruncatedTitle: '部分 reasoning 已截斷；顯示的是最近的內容', outputTruncatedTitle: '助手輸出已超過單次回合上限，超出部分未渲染。如需完整內容請重新生成或檢視持久化的任務記錄。', removeAttachmentAriaLabel: (name) => `移除 ${name}`, quoteLabel: '引用', quoteExpandAriaLabel: '展開引用全文', quoteCollapseAriaLabel: '收起引用', removeQuoteAriaLabel: '移除引用', aborted: '(已中斷)', abortedByStop: '(已中斷 · 由停止按鈕觸發)',
       systemNotes: {
         contextCompacted: '已壓縮較早的對話內容，以適應模型上下文視窗。',
         contextCompactionFailedOpen: '上下文摘要失敗；本輪已在未生成新摘要的情況下繼續。',
@@ -654,7 +654,7 @@ const CONVERSATION_COPY = {
         },
       },
       clearGoal: (condition, iteration, max, status) => `自主執行目標進行中：「${condition}」（第 ${iteration}/${max} 輪，${status}）。系統每輪後自動續行；點選可清除目標、停止續行。`, clearGoalAriaLabel: (iteration, max) => `清除自主執行目標（已進行 ${iteration}/${max} 輪）`, goalProgress: (iteration, max) => `目標 ${iteration} / ${max}`, goalRunningAriaLabel: '自主目標正在執行', goalWaitingAriaLabel: '自主目標正在等待條件變化',
-      goalPausedAriaLabel: '自主目標已暫停', pauseGoalAriaLabel: (iteration, max) => `暫停自主執行目標（已進行 ${iteration}/${max} 輪）`, resumeGoalAriaLabel: (iteration, max) => `恢復自主執行目標（已進行 ${iteration}/${max} 輪）`, pauseGoal: (condition, iteration, max, status) => `暫停自主執行目標：「${condition}」（第 ${iteration}/${max} 輪，${status}）。暫停後立即停止自動續行，不再消耗令牌；可隨時恢復。`, resumeGoal: (condition, iteration, max) => `恢復自主執行目標：「${condition}」（第 ${iteration}/${max} 輪）。恢復後立即繼續自動續行。`, goalElapsed: (elapsedMs) => formatGoalElapsedUnits(elapsedMs, { second: ' 秒', minute: ' 分鐘', hour: ' 小時', day: ' 天' }), goalTokens: (spent, budget) => `${formatCompactTokenCount(spent)} / ${formatCompactTokenCount(budget)}`,
+      goalPausedAriaLabel: '自主目標已暫停', pauseGoalAriaLabel: (iteration, max) => `暫停自主執行目標（已進行 ${iteration}/${max} 輪）`, resumeGoalAriaLabel: (iteration, max) => `恢復自主執行目標（已進行 ${iteration}/${max} 輪）`, pauseGoal: (condition, iteration, max, status) => `暫停自主執行目標：「${condition}」（第 ${iteration}/${max} 輪，${status}）。暫停後立即停止自動續行，不再消耗權杖；可隨時恢復。`, resumeGoal: (condition, iteration, max) => `恢復自主執行目標：「${condition}」（第 ${iteration}/${max} 輪）。恢復後立即繼續自動續行。`, goalElapsed: (elapsedMs) => formatGoalElapsedUnits(elapsedMs, { second: ' 秒', minute: ' 分鐘', hour: ' 小時', day: ' 天' }), goalTokens: (spent, budget) => `${formatCompactTokenCount(spent)} / ${formatCompactTokenCount(budget)}`,
       loadFailed: '任務載入失敗', loading: '載入中…', retryLoad: '重試載入', quoteSelection: '引用', askInSidePanel: '在側欄追問', noMessages: '暫無訊息',
       branchBeforeInterrupt: '從中斷前分支', sessionContextAriaLabel: '任務上下文', sessionLineageAriaLabel: '任務來源', sessionContextMore: (count) => `更多工上下文（${count}）`,
       titlebarIdentityAriaLabel: '目前任務', openProjectFolder: (name) => `在檔案管理器中開啟「${name}」`, openProjectFolderAction: '開啟專案資料夾',

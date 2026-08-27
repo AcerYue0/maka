@@ -71,7 +71,7 @@ const SETTINGS_NAVIGATION_COPY_BY_LOCALE = {
       'import-tasks': { label: '匯入任務', description: '把本機其他 Agent 的對話記錄轉換成 Maka 任務。' },
       memory: { label: '記憶', description: 'Maka 記住的內容，以及本地 MEMORY.md 檔案。' },
       'daily-review': { label: '每日回顧', description: '每天分析本機任務，生成摘要、遺漏提醒和建議。' },
-      'bot-chat': { label: '遠端接入', description: '透過 Telegram、飛書、微信等平臺從其他裝置與 Maka 對話。' },
+      'bot-chat': { label: '遠端串接', description: '透過 Telegram、飛書、微信等平臺從其他裝置與 Maka 對話。' },
       search: { label: '聯網搜尋', description: '聯網搜尋供應商（如 Tavily）憑據與隱私邊界。' },
       data: { label: '資料', description: '本地工作區路徑、備份與恢復。' },
       permissions: { label: '權限與能力', description: '系統權限授予狀態與 Maka 能力執行時檢查。' },

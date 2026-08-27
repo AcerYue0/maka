@@ -167,7 +167,7 @@ const PERMISSION_CENTER_COPY = {
     actionFailures: {
       invalid_id: '內部錯誤：權限 id 無法識別。',
       unsupported_platform: '目前作業系統不支援這個權限操作。',
-      unsupported_permission: '目前平臺沒有提供這個權限的直接入口。',
+      unsupported_permission: '目前平臺沒有提供這個權限的直串接口。',
       denied: '你沒有授予這項權限；可以前往系統設定重新開啟。',
       already_open: '另一個權限引導仍在進行，請先完成或關閉它。',
       open_settings_failed: '無法開啟系統設定，請手動前往「隱私與安全性」。',

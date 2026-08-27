@@ -104,7 +104,7 @@ const ONBOARDING_COPY_BY_LOCALE: UiCatalog<OnboardingCatalog> = {
     hero: {
       needs_connection: {
         eyebrow: '歡迎使用 Maka',
-        title: '接入一個 AI，開始第一項任務。',
+        title: '串接一個 AI，開始第一項任務。',
         body: 'Maka 在本地執行，使用你自己的模型帳號或 API key。先選一個常用服務商。',
         cta: { label: '瀏覽全部服務商' },
       },

@@ -70,4 +70,5 @@ test('Traditional Chinese bot settings use Taiwan integration terminology', () =
   assert.match(copy.providers.wecom.help, /串接/);
   assert.doesNotMatch(copy.providers.wecom.help, /接入/);
   assert.match(copy.overview.more, /串接更多/);
+  assert.doesNotMatch(copy.overview.more, /渠道|訪問|匹配/);
 });

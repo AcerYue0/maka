@@ -158,7 +158,7 @@ const ARTIFACT_COPY = {
     registry: {
       kindDisallowed: { title: '目前預覽暫不支援該型別', description: '此類生成檔案不能在面板內直接預覽。請使用「在 Finder 中開啟」檢視。' },
       mimeDisallowed: { title: '格式暫不支援預覽', description: '已識別到檔案的 MIME 型別，但目前預覽只支援 PNG / JPEG / GIF / WebP / AVIF。' },
-      unknownType: { title: '無法識別檔案型別', description: '檔案沒有 MIME 後設資料，副檔名也未匹配。請透過「在 Finder 中開啟」檢視。' },
+      unknownType: { title: '無法識別檔案型別', description: '檔案沒有 MIME 後設資料，副檔名也未符合。請透過「在 Finder 中開啟」檢視。' },
       oversize: { title: '檔案過大，暫不預覽', description: '為避免在記憶體中載入大體積圖片，超過 2 MB 的檔案不在此處展開預覽。' },
       readFailed: { title: '載入預覽失敗', description: '無法讀取檔案內容（可能已被刪除、移動或權限不足）。請透過「在 Finder 中開啟」檢查檔案。' },
       unsupported: '暫不支援的預覽', name: '名稱', unnamed: '(未命名)', type: '型別', size: '大小', openInFinder: '在 Finder 中開啟', loadingImage: '載入圖片預覽…',

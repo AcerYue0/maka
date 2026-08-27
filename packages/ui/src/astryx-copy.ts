@@ -218,7 +218,7 @@ export const ASTRYX_COPY_ZH_TW: AstryxCopy = {
     emptySearch: '無結果',
     inputPlaceholder: '搜尋…',
     label: '命令面板',
-    noResultsFor: '沒有與「{query}」匹配的結果',
+    noResultsFor: '沒有與「{query}」符合的結果',
     resultCount: '{count, number} 條結果',
   },
   dateTime: {

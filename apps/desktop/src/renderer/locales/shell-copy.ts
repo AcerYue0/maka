@@ -1282,7 +1282,7 @@ const SHELL_COPY_BY_LOCALE = {
       messageRefresh: '任務內容暫時無法重新整理，請稍後重試。',
       openPath: (path: string) => `無法開啟${path}，請稍後重試。`,
       workspaceUnavailableTitle: '工作目錄不可用',
-      workspaceUnavailableDescription: '工作目錄不存在或無法訪問。請選擇有效目錄建立新任務。',
+      workspaceUnavailableDescription: '工作目錄不存在或無法存取。請選擇有效目錄建立新任務。',
     },
     chatActions: {
       newConversation: '建立任務',
@@ -1507,13 +1507,13 @@ const SHELL_COPY_BY_LOCALE = {
         bypass: '完全權限',
       },
       permissionDescriptions: {
-        explore: '只讀：只讀取和搜尋，寫入檔案和訪問網路會先來問你。',
+        explore: '只讀：只讀取和搜尋，寫入檔案和存取網路會先來問你。',
         ask: '自動：在 Maka 的保護層內執行；需要超出目前權限範圍時會先來問你。',
-        bypass: '本地工具直接訪問你的檔案和網路，不經 Maka 的保護層。',
+        bypass: '本地工具直接存取你的檔案和網路，不經 Maka 的保護層。',
       },
       bypassConfirmTitle: '切換到完全權限？',
       bypassConfirmDescription:
-        '本地工具將直接讀寫你的檔案並訪問網路，不經 Maka 的保護層。僅用於你完全信任、或已在外部隔離環境中執行的任務。',
+        '本地工具將直接讀寫你的檔案並存取網路，不經 Maka 的保護層。僅用於你完全信任、或已在外部隔離環境中執行的任務。',
       bypassConfirmLabel: '開啟完全權限',
       bypassCancelLabel: '保持自動',
       permissionSwitched: (label: string) => `已切到 ${label}`,
@@ -1592,7 +1592,7 @@ const SHELL_COPY_BY_LOCALE = {
       placeholder: '搜尋命令、設定項或任務…',
       closeLabel: '關閉命令面板',
       resultsLabel: '命令面板結果',
-      emptyTitle: '沒有匹配的命令',
+      emptyTitle: '沒有符合的命令',
       emptyDescription: '換個關鍵詞，或按 Esc 關閉。',
       selectHint: '選擇',
       runHint: '執行',
@@ -1612,7 +1612,7 @@ const SHELL_COPY_BY_LOCALE = {
         ask: { label: '權限 · 自動', hint: '在 Maka 的保護層內執行；需要超出目前權限範圍時再詢問' },
         bypass: {
           label: '權限 · 完全權限',
-          hint: '不經 Maka 的保護層，直接訪問你的檔案和網路',
+          hint: '不經 Maka 的保護層，直接存取你的檔案和網路',
         },
       },
       settingsCommand: (section: string) => `設定 · ${section}`,
