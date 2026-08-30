@@ -27,8 +27,13 @@ import {
   type TUI,
 } from '@earendil-works/pi-tui';
 import type { McpProtocolPreference, McpServerConfig } from '@maka/core/mcp';
-import type { UiLocale } from '@maka/core/ui-locale';
 import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
+import {
+  defineUiMessageCatalog,
+  formatUiMessage,
+  resolveUiMessageCatalog,
+  type UiLocale,
+} from '@maka/core/ui-locale';
 import { normalizeMcpConfig } from '@maka/storage/mcp-config-store';
 import type {
   TuiMcpAction,
@@ -38,8 +43,34 @@ import type {
   TuiMcpServerSnapshot,
 } from './tui-mcp-control.js';
 import { ansi, editorTheme } from './tui-ansi.js';
+import { TUI_COPY_RESOURCES } from './tui-copy-catalog.js';
 
 const CHROME_ROWS = 2;
+
+interface TuiMcpStatusCopy {
+  readonly title: string;
+  readonly footer: {
+    readonly back: string;
+    readonly readOnly: string;
+    readonly manage: string;
+  };
+  readonly unavailableTitle: string;
+  readonly unavailableDetail: string;
+  readonly loading: string;
+  readonly loadError: string;
+  readonly noServers: string;
+  readonly publication: Readonly<
+    Record<ReturnType<TuiMcpManagement['snapshot']>['publication'], string>
+  >;
+  readonly serverState: Readonly<Record<NonNullable<TuiMcpServerSnapshot['state']>, string>>;
+  readonly configuredOnly: string;
+  readonly configPending: string;
+  readonly toolCount: string;
+}
+
+const MCP_STATUS_COPY = resolveUiMessageCatalog(
+  defineUiMessageCatalog<TuiMcpStatusCopy>()(TUI_COPY_RESOURCES['mcp-status']),
+);
 
 type GuidedDraft = {
   serverId: string;
@@ -172,7 +203,7 @@ export class McpManagementOverlay implements Component {
     const visible = document.slice(this.top, this.top + this.bodyRows);
     const start = visible.length === 0 ? 0 : this.top + 1;
     const end = visible.length === 0 ? 0 : this.top + visible.length;
-    const title = localized(this.input.locale, 'MCP 服务器', 'MCP 伺服器', 'MCP SERVERS');
+    const title = MCP_STATUS_COPY[this.input.locale].title;
     const header = padLine(
       `${ansi.bold(title)} ${ansi.dim(`${start}-${end} / ${document.length}`)}`,
       safeWidth,
@@ -465,23 +496,10 @@ export class McpManagementOverlay implements Component {
   }
 
   private footer(): string {
-    if (this.phase.kind !== 'list') {
-      return localized(this.input.locale, 'Esc 返回', 'Esc 返回', 'Esc back');
-    }
-    if (!this.management()) {
-      return localized(
-        this.input.locale,
-        '↑/↓ 滚动 · q/Esc 关闭',
-        '↑/↓ 捲動 · q/Esc 關閉',
-        '↑/↓ scroll · q/Esc close',
-      );
-    }
-    return localized(
-      this.input.locale,
-      'a 添加 · Enter 编辑 · Space 启用/停用 · t 测试 · r 重连 · d 删除 · Esc 关闭',
-      'a 新增 · Enter 編輯 · Space 啟用/停用 · t 測試 · r 重新連線 · d 刪除 · Esc 關閉',
-      'a Add · Enter Edit · Space Enable/disable · t Test · r Reconnect · d Remove · Esc Close',
-    );
+    const copy = MCP_STATUS_COPY[this.input.locale].footer;
+    if (this.phase.kind !== 'list') return copy.back;
+    if (!this.management()) return copy.readOnly;
+    return copy.manage;
   }
 
   private backToList(clearNotice = true): void {
@@ -593,25 +611,9 @@ function publicationLine(
   snapshot: ReturnType<TuiMcpManagement['snapshot']>,
   locale: UiLocale,
 ): string {
-  const publication = {
-    waiting: localized(locale, '等待发布', '等待發佈', 'waiting to publish'),
-    host_unavailable: localized(
-      locale,
-      'Runtime Host 重连中',
-      'Runtime Host 重新連線中',
-      'Runtime Host reconnecting',
-    ),
-    publishing: localized(locale, '正在发布', '正在發佈', 'publishing'),
-    published: localized(locale, '已发布', '已發佈', 'published'),
-    not_published: localized(locale, '未发布', '未發佈', 'not published'),
-    error: localized(locale, '发布失败', '發佈失敗', 'publication failed'),
-  }[snapshot.publication];
-  const tools = localized(
-    locale,
-    `${snapshot.toolCount} 个工具`,
-    `${snapshot.toolCount} 個工具`,
-    `${snapshot.toolCount} tools`,
-  );
+  const copy = MCP_STATUS_COPY[locale];
+  const publication = copy.publication[snapshot.publication];
+  const tools = formatUiMessage(copy.toolCount, { count: snapshot.toolCount }, locale);
   return `${ansi.bold(publication)} · ${tools}`;
 }
 
@@ -620,15 +622,9 @@ function serverLines(server: TuiMcpServerSnapshot, locale: UiLocale, selected: b
     ? `${server.negotiatedProtocol.era} ${server.negotiatedProtocol.revision}`
     : server.configuredProtocol;
   const transport = server.transport ?? server.configuredTransport;
-  const tools = localized(
-    locale,
-    `${server.toolCount} 个工具`,
-    `${server.toolCount} 個工具`,
-    `${server.toolCount} tools`,
-  );
-  const sync = !server.synchronized
-    ? localized(locale, '配置待同步', '設定待同步', 'config pending')
-    : undefined;
+  const copy = MCP_STATUS_COPY[locale];
+  const tools = formatUiMessage(copy.toolCount, { count: server.toolCount }, locale);
+  const sync = server.synchronized ? undefined : copy.configPending;
   const details = [stateLabel(server.state, locale), transport, protocol, tools, sync]
     .filter(Boolean)
     .join(' · ');
@@ -821,22 +817,8 @@ function configurationLine(state: 'synchronizing' | 'out_of_sync', locale: UiLoc
 }
 
 function unavailableDocument(locale: UiLocale): string[] {
-  return [
-    ansi.yellow(
-      localized(
-        locale,
-        '当前 TUI 未连接本地 MCP 控制面。',
-        '目前 TUI 未連線至本機 MCP 控制介面。',
-        'This TUI is not connected to a local MCP control plane.',
-      ),
-    ),
-    localized(
-      locale,
-      '远程 Runtime Host 的客户端 MCP 工具关联将在后续版本提供。',
-      '遠端 Runtime Host 的用戶端 MCP 工具關聯將於後續版本提供。',
-      'Client MCP tool association for remote Runtime Hosts is planned for a later release.',
-    ),
-  ];
+  const copy = MCP_STATUS_COPY[locale];
+  return [ansi.yellow(copy.unavailableTitle), copy.unavailableDetail];
 }
 
 function heading(locale: UiLocale, en: string, zh: string, zhTw: string): string {
@@ -848,30 +830,15 @@ function confirmCopy(locale: UiLocale): string {
 }
 
 function loadingCopy(locale: UiLocale): string {
-  return localized(
-    locale,
-    '正在读取 mcp.json 并发现工具…',
-    '正在讀取 mcp.json 並探索工具…',
-    'Loading mcp.json and discovering tools…',
-  );
+  return MCP_STATUS_COPY[locale].loading;
 }
 
 function loadErrorCopy(locale: UiLocale): string {
-  return localized(
-    locale,
-    '无法读取或应用 MCP 配置；没有向 Runtime Host 发布工具。',
-    '無法讀取或套用 MCP 設定；未向 Runtime Host 發佈任何工具。',
-    'MCP configuration could not be loaded; no tools were published to the Runtime Host.',
-  );
+  return MCP_STATUS_COPY[locale].loadError;
 }
 
 function emptyCopy(locale: UiLocale): string {
-  return localized(
-    locale,
-    '尚未配置 MCP 服务器。按 a 添加。',
-    '尚未設定 MCP 伺服器。按 a 新增。',
-    'No MCP servers are configured. Press a to add one.',
-  );
+  return MCP_STATUS_COPY[locale].noServers;
 }
 
 function statusMarker(state: TuiMcpServerSnapshot['state']): string {
@@ -882,25 +849,9 @@ function statusMarker(state: TuiMcpServerSnapshot['state']): string {
 }
 
 function stateLabel(state: TuiMcpServerSnapshot['state'], locale: UiLocale): string {
-  if (!state) return localized(locale, '仅已配置', '僅已設定', 'configured only');
-  if (locale === 'en') return state;
-  const simplified = {
-    disabled: '已停用',
-    disconnected: '未连接',
-    connecting: '连接中',
-    connected: '已连接',
-    'needs-auth': '需要登录',
-    error: '错误',
-  }[state];
-  if (locale === 'zh-CN') return simplified;
-  return {
-    disabled: '已停用',
-    disconnected: '未連線',
-    connecting: '連線中',
-    connected: '已連線',
-    'needs-auth': '需要登入',
-    error: '錯誤',
-  }[state];
+  const copy = MCP_STATUS_COPY[locale];
+  if (!state) return copy.configuredOnly;
+  return copy.serverState[state] ?? state;
 }
 
 function localized(

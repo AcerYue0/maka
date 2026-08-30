@@ -174,6 +174,9 @@ const zhCopy = {
         : '',
     ].filter(Boolean).join(' '),
     connectionSuccess: (name: string) => `连接成功 · ${name}`, connectionFailed: (name: string) => `连接失败 · ${name}`,
+    connectionFallbackTitle: (name: string) => `连接可用 · ${name}`,
+    connectionFallbackDetail: (selected: readonly string[], tested: string) =>
+      `你选择的 ${selected.join('、')} 当前未响应，已改用 ${tested} 验证连接可用；任务中继续使用你选择的模型可能会失败。`,
     connectionTestError: (name: string) => `连接测试出错 · ${name}`, modelsFetched: (count: number, name: string) => `已拉取 ${count} 个模型 · ${name}`,
     modelsFetchFailed: (name: string) => `拉取模型失败 · ${name}`,
     modelsFetchFailedDetail: (message: string, troubleshooting: string) => `${message} · 当前继续显示静态列表，请确认 ${troubleshooting} 后重试。`,
@@ -322,6 +325,9 @@ const zhTwCopy = {
         : '',
     ].filter(Boolean).join(' '),
     connectionSuccess: (name: string) => `連線成功 · ${name}`, connectionFailed: (name: string) => `連線失敗 · ${name}`,
+    connectionFallbackTitle: (name: string) => `連線可用 · ${name}`,
+    connectionFallbackDetail: (selected: readonly string[], tested: string) =>
+      `你選擇的 ${selected.join('、')} 目前沒有回應，已改用 ${tested} 驗證連線可用；任務中繼續使用你選擇的模型可能會失敗。`,
     connectionTestError: (name: string) => `連線測試出錯 · ${name}`, modelsFetched: (count: number, name: string) => `已拉取 ${count} 個模型 · ${name}`,
     modelsFetchFailed: (name: string) => `拉取模型失敗 · ${name}`,
     modelsFetchFailedDetail: (message: string, troubleshooting: string) => `${message} · 目前繼續顯示靜態列表，請確認 ${troubleshooting} 後重試。`,
@@ -472,6 +478,9 @@ const enCopy: ProviderSettingsCopy = {
         : '',
     ].filter(Boolean).join(' '),
     connectionSuccess: (name: string) => `Connected · ${name}`, connectionFailed: (name: string) => `Connection failed · ${name}`,
+    connectionFallbackTitle: (name: string) => `Connection works · ${name}`,
+    connectionFallbackDetail: (selected: readonly string[], tested: string) =>
+      `Your selected ${selected.join(', ')} didn't respond; verified the connection with ${tested} instead. Tasks using your selected model may fail.`,
     connectionTestError: (name: string) => `Connection test error · ${name}`, modelsFetched: (count: number, name: string) => `Fetched ${count} ${count === 1 ? 'model' : 'models'} · ${name}`,
     modelsFetchFailed: (name: string) => `Failed to fetch models · ${name}`,
     modelsFetchFailedDetail: (message: string, troubleshooting: string) => `${message} · The static list remains visible. Check ${troubleshooting} and try again.`,

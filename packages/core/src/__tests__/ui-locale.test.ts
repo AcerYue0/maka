@@ -17,28 +17,32 @@
  * under the License.
  */
 
-import { describe, test } from 'node:test';
-import { expect } from './test-helpers.js';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import {
+  UI_LOCALES,
+  defineUiMessageCatalog,
+  formatUiMessage,
   isUiLocale,
   isUiLocalePreference,
   normalizeUiLocalePreference,
   resolveSystemUiLocale,
   resolveUiLocale,
+  resolveUiMessageCatalog,
   uiLocaleToIntlLocale,
 } from '../ui-locale.js';
 
 describe('UI locale', () => {
-  test('accepts only the supported resolved locales and preferences', () => {
-    expect(['zh-CN', 'zh-TW', 'en'].every(isUiLocale)).toBe(true);
-    expect(isUiLocale('zh')).toBe(false);
-    expect(['auto', 'zh-CN', 'zh-TW', 'en'].every(isUiLocalePreference)).toBe(true);
+  it('accepts only the supported resolved locales and preferences', () => {
+    assert.equal(['zh-CN', 'zh-TW', 'en'].every(isUiLocale), true);
+    assert.equal(isUiLocale('zh'), false);
+    assert.equal(['auto', 'zh-CN', 'zh-TW', 'en'].every(isUiLocalePreference), true);
   });
 
-  test('normalizes the legacy persisted preference without widening the locale contract', () => {
-    expect(normalizeUiLocalePreference('zh')).toBe('zh-CN');
-    expect(normalizeUiLocalePreference('zh-TW')).toBe('zh-TW');
-    expect(normalizeUiLocalePreference('unsupported')).toBe('auto');
+  it('normalizes the legacy persisted preference without widening the locale contract', () => {
+    assert.equal(normalizeUiLocalePreference('zh'), 'zh-CN');
+    assert.equal(normalizeUiLocalePreference('zh-TW'), 'zh-TW');
+    assert.equal(normalizeUiLocalePreference('unsupported'), 'auto');
   });
 
   for (const [languages, expected] of [
@@ -53,20 +57,54 @@ describe('UI locale', () => {
     [['fr-FR', 'en-US'], 'en'],
     [[], 'en'],
   ] as const) {
-    test(`resolves system languages ${languages.join(',')} to ${expected}`, () => {
-      expect(resolveSystemUiLocale(languages)).toBe(expected);
+    it(`resolves system languages ${languages.join(',')} to ${expected}`, () => {
+      assert.equal(resolveSystemUiLocale(languages), expected);
     });
   }
 
-  test('resolves explicit preferences and overrides before the system locale', () => {
-    expect(resolveUiLocale('auto', 'zh-TW')).toBe('zh-TW');
-    expect(resolveUiLocale('zh-CN', 'zh-TW')).toBe('zh-CN');
-    expect(resolveUiLocale('zh-CN', 'zh-CN', 'en')).toBe('en');
+  it('resolves explicit preferences and overrides before the system locale', () => {
+    assert.equal(resolveUiLocale('auto', 'zh-TW'), 'zh-TW');
+    assert.equal(resolveUiLocale('zh-CN', 'zh-TW'), 'zh-CN');
+    assert.equal(resolveUiLocale('zh-CN', 'zh-CN', 'en'), 'en');
   });
 
-  for (const locale of ['zh-CN', 'zh-TW', 'en'] as const) {
-    test(`uses ${locale} for Intl formatting`, () => {
-      expect(uiLocaleToIntlLocale(locale)).toBe(locale);
+  it('keeps every locale guard and formatter in step with UI_LOCALES', () => {
+    for (const locale of UI_LOCALES) {
+      assert.ok(isUiLocale(locale), locale);
+      assert.equal(resolveSystemUiLocale([locale]), locale);
+      assert.equal(uiLocaleToIntlLocale(locale), locale);
+    }
+    const intlLocales = UI_LOCALES.map(uiLocaleToIntlLocale);
+    assert.equal(new Set(intlLocales).size, UI_LOCALES.length);
+  });
+});
+
+describe('UI message catalogs', () => {
+  it('falls back to complete English copy for missing translations', () => {
+    const catalog = defineUiMessageCatalog<{
+      title: string;
+      detail: { ready: string; waiting: string };
+    }>()({
+      en: { title: 'Status', detail: { ready: 'Ready', waiting: 'Waiting' } },
+      'zh-CN': { title: '状态', detail: { ready: '就绪' } },
     });
-  }
+
+    assert.deepEqual(resolveUiMessageCatalog(catalog), {
+      en: { title: 'Status', detail: { ready: 'Ready', waiting: 'Waiting' } },
+      'zh-CN': { title: '状态', detail: { ready: '就绪', waiting: 'Waiting' } },
+      'zh-TW': { title: 'Status', detail: { ready: 'Ready', waiting: 'Waiting' } },
+    });
+  });
+
+  it('uses locale-aware ICU plural rules', () => {
+    const template = '{count, plural, one {# tool} other {# tools}}';
+
+    assert.equal(formatUiMessage(template, { count: 1 }, 'en'), '1 tool');
+    assert.equal(formatUiMessage(template, { count: 3 }, 'en'), '3 tools');
+  });
+
+  it('fails soft for missing or inherited interpolation values', () => {
+    assert.equal(formatUiMessage('Hello {name}', {}, 'en'), 'Hello {name}');
+    assert.equal(formatUiMessage('{constructor}', {}, 'en'), '{constructor}');
+  });
 });
