@@ -28,10 +28,47 @@ export type SettingsProjectsCopy = {
     remoteTitle: string;
     remoteDescription: string;
     addComputer: string;
+    useConnectionCode: string;
     configureManually: string;
+    thisComputerRemoteAccess: string;
+    thisComputerRemoteAccessHelp: string;
+    remoteAccessOn: string;
+    remoteAccessOff: string;
+    enableRemoteAccess: string;
+    disableRemoteAccess: string;
+    disableRemoteAccessConfirm: string;
+    disableRemoteAccessDescription: string;
+    revokeSharedAccess: string;
+    revokeSharedAccessConfirm: string;
+    revokeSharedAccessDescription: string;
+    revokeSharedAccessDone: string;
+    createConnectionCode: string;
+    connectionCodeTitle: string;
+    connectionCodeDescription: string;
+    importConnectionCodeTitle: string;
+    importConnectionCodeDescription: string;
+    connectionCode: string;
+    copyConnectionCode: string;
+    connectionCodeCopied: string;
+    connectionCodeInvalid: string;
+    connectionCodeUnavailable: string;
+    connectionCodeHostUnreachable: string;
+    connectionCodeHostMismatch: string;
+    connectionCodeUnknownError: string;
+    connectWithCode: string;
+    remoteAccessActiveTasks: string;
+    remoteAccessActiveTasksDescription: string;
+    uninstallActiveTasksDescription: string;
+    interruptAndEnable: string;
+    interruptAndUninstall: string;
+    remoteAccessFailed: string;
     setupTitle: string;
     setupDescription: string;
     setupName: string;
+    setupTarget: string;
+    sshComputer: string;
+    wslEnvironment: string;
+    wslDistribution: string;
     setupSshPort: string;
     setupDirectoryRootsDescription: string;
     setupConnect: string;
@@ -93,10 +130,16 @@ export type SettingsProjectsCopy = {
     directPeerRoutes: string;
     directPeerCoordinationRelays: string;
     directPeerCoordinationRelaysPlaceholder: string;
+    directPeerAdvancedCoordination: string;
+    directPeerAutomaticRelayDiscovery: string;
+    directPeerAutomaticRelayDiscoveryHelp: string;
     directPeerEnable: string;
     directPeerDisable: string;
     directPeerAddProfile: string;
     directPeerActionFailed: string;
+    peerMesh: string;
+    peerMeshHelp: string;
+    managePeerMesh: string;
     installedVersion: string;
     operatingSystem: string;
     processId: string;
@@ -120,6 +163,8 @@ export type SettingsProjectsCopy = {
     refresh: string;
     startService: string;
     restartService: string;
+    restartActiveTasksDescription: string;
+    restartInterrupt: string;
     repairService: string;
     updateService: string;
     updatePolicy: string;
@@ -245,16 +290,53 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
   'zh-CN': {
     runtimeHost: {
       title: 'Runtime Host',
-      description: 'Local 与启用的远程 Host 会同时保持连接；任务仍由其所属 Host 处理。',
+      description: 'Local 与其他已启用的 Host 会同时保持连接；任务仍由其所属 Host 处理。',
       selected: '默认 Host',
       selectedHelp: '新任务和未指定 Host 的设置使用默认 Host',
-      remoteTitle: '远程 Host',
-      remoteDescription: '通过 SSH 自动设置一台电脑，或手动连接已有 Runtime Host。',
+      remoteTitle: '其他 Host',
+      remoteDescription: '在 SSH 电脑或本地 WSL 环境中设置 Runtime Host，也可手动连接已有 Host。',
       addComputer: '添加电脑',
+      useConnectionCode: '使用连接码',
       configureManually: '手动配置',
-      setupTitle: '添加远程电脑',
-      setupDescription: '通过 SSH 安装并连接 Runtime Host',
+      thisComputerRemoteAccess: '远程访问',
+      thisComputerRemoteAccessHelp: '通过实验性端到端直连访问此 Host；可自动发现公共协调节点来辅助打洞',
+      remoteAccessOn: '已开启',
+      remoteAccessOff: '未开启',
+      enableRemoteAccess: '开启',
+      disableRemoteAccess: '关闭连接',
+      disableRemoteAccessConfirm: '关闭远程连接？',
+      disableRemoteAccessDescription: '这只会停止 Direct peer 连接；已授予的共享访问仍会保留。',
+      revokeSharedAccess: '撤销共享访问',
+      revokeSharedAccessConfirm: '撤销共享访问？',
+      revokeSharedAccessDescription: '已连接的 Desktop 将断开，尚未使用的连接码也会失效。',
+      revokeSharedAccessDone: '共享访问已撤销',
+      createConnectionCode: '新建连接码',
+      connectionCodeTitle: '连接这台电脑',
+      connectionCodeDescription: '连接码将在 15 分钟后过期且只能使用一次。对方将获得 Owner 权限；Direct peer 无后备连接。',
+      importConnectionCodeTitle: '使用连接码',
+      importConnectionCodeDescription: '连接后将获得对方 Host 的 Owner 权限。Direct peer 无后备连接。',
+      connectionCode: '连接码',
+      copyConnectionCode: '复制连接码',
+      connectionCodeCopied: '连接码已复制',
+      connectionCodeInvalid: '连接码格式无效。',
+      connectionCodeUnavailable: '连接码已过期或已被使用。请在另一台电脑上新建连接码。',
+      connectionCodeHostUnreachable: '无法建立 Direct peer 连接。请确认两台电脑在线且网络允许 UDP。',
+      connectionCodeHostMismatch: '连接码指向的 Host 与实际连接的 Host 不匹配或版本不兼容。',
+      connectionCodeUnknownError: '连接结果未知。请先检查远程 Host 列表，再决定是否重试。',
+      connectWithCode: '连接',
+      remoteAccessActiveTasks: '这台电脑仍有正在运行的任务',
+      remoteAccessActiveTasksDescription: '开启远程访问需要把 Local Host 交给系统服务。是否中断当前任务并继续？',
+      uninstallActiveTasksDescription: '移除后台服务会停止当前任务。是否中断这些任务并继续？',
+      interruptAndEnable: '中断任务并开启',
+      interruptAndUninstall: '中断任务并移除',
+      remoteAccessFailed: '远程访问操作失败',
+      setupTitle: '添加 Runtime Host',
+      setupDescription: '在 SSH 电脑或 WSL 环境中安装并连接 Runtime Host',
       setupName: '显示名称（可选）',
+      setupTarget: '运行位置',
+      sshComputer: 'SSH 计算机',
+      wslEnvironment: 'WSL 环境',
+      wslDistribution: 'WSL 发行版',
       setupSshPort: 'SSH 端口（可选）',
       setupDirectoryRootsDescription: '留空时使用远端 Home。添加目录后，只有这些目录可用于浏览并添加项目。',
       setupConnect: '连接',
@@ -266,6 +348,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       setupPhase: {
         preparing_cli: '正在准备本地 CLI…',
         connecting_ssh: '正在连接 SSH…',
+        connecting_wsl: '正在连接 WSL 环境…',
         checking_environment: '正在检查远程环境…',
         installing_package: '正在安装 Maka…',
         installing_service: '正在启动 Runtime Host…',
@@ -321,7 +404,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
         failed: '启动失败',
       },
       directPeer: 'Direct peer（实验性）',
-      directPeerDescription: '创建独立的实验性 Direct profile。受限 NAT 或被阻止的 UDP 可能使其不可达，且不会自动回退；保留 SSH profile 用于手动恢复。',
+      directPeerDescription: '创建独立的实验性 Direct profile。可自动发现或手动指定协调节点来辅助打洞；受限 NAT 或被阻止的 UDP 仍可能使其不可达，且不会回退到中继传输。保留 SSH profile 用于手动恢复。',
       directPeerState: {
         unsupported: '需要更新',
         not_configured: '未配置',
@@ -337,10 +420,17 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       directPeerRoutes: '可用路径',
       directPeerCoordinationRelays: '连接协调节点（可选）',
       directPeerCoordinationRelaysPlaceholder: '多个地址用逗号分隔',
+      directPeerAdvancedCoordination: '手动设置协调节点',
+      directPeerAutomaticRelayDiscovery: '自动发现协调节点',
+      directPeerAutomaticRelayDiscoveryHelp:
+        '协调节点使用 Circuit Relay v2 协议，仅帮助建立端到端直连，不承载应用流量。Maka 会通过公共 IPFS 网络尽力发现可用节点；手动设置的节点优先。',
       directPeerEnable: '启用并添加',
       directPeerDisable: '停用',
       directPeerAddProfile: '添加到 Desktop',
       directPeerActionFailed: 'Direct peer 操作失败',
+      peerMesh: 'Peer Mesh',
+      peerMeshHelp: '管理本 Desktop peer 的私有 Mesh membership 和邀请',
+      managePeerMesh: '管理 Peer Mesh',
       installedVersion: '版本',
       operatingSystem: '系统',
       processId: '进程 ID',
@@ -364,6 +454,8 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       refresh: '刷新',
       startService: '启动',
       restartService: '重启',
+      restartActiveTasksDescription: '重启会停止当前任务。是否中断这些任务并继续？',
+      restartInterrupt: '中断任务并重启',
       repairService: '修复',
       updateService: '安装配套版本',
       updatePolicy: '更新策略',
@@ -412,7 +504,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       showLogs: '查看日志',
       noLogs: '没有服务日志',
       uninstallService: '卸载服务',
-      uninstallConfirmTitle: '卸载远程 Runtime Host？',
+      uninstallConfirmTitle: '卸载此 Runtime Host？',
       uninstallConfirmBody: '这会停止并移除 Maka 管理的服务与程序，但保留 State Root、项目和任务数据。当前 Desktop Profile 不会被删除。',
       uninstallConfirm: '卸载服务',
       uninstallRetained: (path: string) => `服务已卸载，数据保留在 ${path}`,
@@ -494,10 +586,47 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       remoteTitle: '遠端 Host',
       remoteDescription: '透過 SSH 自動設定一臺電腦，或手動連線已有 Runtime Host。',
       addComputer: '新增電腦',
+      useConnectionCode: '使用連線碼',
       configureManually: '手動設定',
+      thisComputerRemoteAccess: '遠端存取',
+      thisComputerRemoteAccessHelp: '透過實驗性端對端直接連線存取此 Host；可自動探索公用協調節點以協助穿透 NAT',
+      remoteAccessOn: '已開啟',
+      remoteAccessOff: '未開啟',
+      enableRemoteAccess: '開啟',
+      disableRemoteAccess: '關閉連線',
+      disableRemoteAccessConfirm: '關閉遠端連線？',
+      disableRemoteAccessDescription: '這只會停止 Direct peer 連線；已授予的分享存取權仍會保留。',
+      revokeSharedAccess: '撤銷分享存取權',
+      revokeSharedAccessConfirm: '撤銷分享存取權？',
+      revokeSharedAccessDescription: '已連線的 Desktop 將中斷連線，尚未使用的連線碼也會失效。',
+      revokeSharedAccessDone: '已撤銷分享存取權',
+      createConnectionCode: '建立連線碼',
+      connectionCodeTitle: '連線至這台電腦',
+      connectionCodeDescription: '連線碼將於 15 分鐘後過期且只能使用一次。對方將取得 Owner 權限；Direct peer 沒有備援連線。',
+      importConnectionCodeTitle: '使用連線碼',
+      importConnectionCodeDescription: '連線後將取得對方 Host 的 Owner 權限。Direct peer 沒有備援連線。',
+      connectionCode: '連線碼',
+      copyConnectionCode: '複製連線碼',
+      connectionCodeCopied: '已複製連線碼',
+      connectionCodeInvalid: '連線碼格式無效。',
+      connectionCodeUnavailable: '連線碼已過期或已被使用。請在另一台電腦上建立新的連線碼。',
+      connectionCodeHostUnreachable: '無法建立 Direct peer 連線。請確認兩台電腦均在線上，且網路允許 UDP。',
+      connectionCodeHostMismatch: '連線碼指向的 Host 與實際連線的 Host 不符，或版本不相容。',
+      connectionCodeUnknownError: '連線結果不明。請先檢查遠端 Host 清單，再決定是否重試。',
+      connectWithCode: '連線',
+      remoteAccessActiveTasks: '這台電腦仍有執行中的任務',
+      remoteAccessActiveTasksDescription: '開啟遠端存取需要將 Local Host 交由系統服務管理。是否中斷目前任務並繼續？',
+      uninstallActiveTasksDescription: '移除背景服務會停止目前任務。是否中斷這些任務並繼續？',
+      interruptAndEnable: '中斷任務並開啟',
+      interruptAndUninstall: '中斷任務並移除',
+      remoteAccessFailed: '遠端存取操作失敗',
       setupTitle: '新增遠端電腦',
-      setupDescription: '透過 SSH 安裝並連線 Runtime Host',
+      setupDescription: '在 SSH 電腦或 WSL 環境中安裝並連線 Runtime Host',
       setupName: '顯示名稱（可選）',
+      setupTarget: '執行位置',
+      sshComputer: 'SSH 電腦',
+      wslEnvironment: 'WSL 環境',
+      wslDistribution: 'WSL 發行版本',
       setupSshPort: 'SSH 埠（可選）',
       setupDirectoryRootsDescription: '留空時使用遠端 Home 資料夾。新增資料夾後，只能瀏覽這些位置以加入專案。',
       setupConnect: '連線',
@@ -509,6 +638,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       setupPhase: {
         preparing_cli: '正在準備本地 CLI…',
         connecting_ssh: '正在連線 SSH…',
+        connecting_wsl: '正在連線 WSL 環境…',
         checking_environment: '正在檢查遠端環境…',
         installing_package: '正在安裝 Maka…',
         installing_service: '正在啟動 Runtime Host…',
@@ -575,8 +705,15 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       directPeerId: 'Peer ID', directPeerRoutes: '可用路徑',
       directPeerCoordinationRelays: '連線協調節點（可選）',
       directPeerCoordinationRelaysPlaceholder: '多個位址請以逗號分隔',
+      directPeerAdvancedCoordination: '手動設定協調節點',
+      directPeerAutomaticRelayDiscovery: '自動探索協調節點',
+      directPeerAutomaticRelayDiscoveryHelp:
+        '協調節點使用 Circuit Relay v2 通訊協定，只協助建立端對端直接連線，不承載應用程式流量。Maka 會透過公用 IPFS 網路盡力探索可用節點；手動設定的節點優先。',
       directPeerEnable: '啟用並新增', directPeerDisable: '停用', directPeerAddProfile: '新增至 Desktop',
       directPeerActionFailed: 'Direct peer 操作失敗',
+      peerMesh: 'Peer Mesh',
+      peerMeshHelp: '管理此 Desktop peer 的私人 Mesh 成員資格和邀請',
+      managePeerMesh: '管理 Peer Mesh',
       installedVersion: '版本',
       operatingSystem: '系統',
       processId: '程序 ID',
@@ -600,6 +737,8 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       refresh: '重新整理',
       startService: '啟動',
       restartService: '重啟',
+      restartActiveTasksDescription: '重新啟動會停止目前任務。是否中斷這些任務並繼續？',
+      restartInterrupt: '中斷任務並重啟',
       repairService: '修復',
       updateService: '安裝配套版本',
       updatePolicy: '更新策略',
@@ -724,17 +863,54 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
   en: {
     runtimeHost: {
       title: 'Runtime Host',
-      description: 'Local and enabled remote Hosts stay connected together. Each task remains owned by its Host.',
+      description: 'Local and other enabled Hosts stay connected together. Each task remains owned by its Host.',
       selected: 'Default Host',
       selectedHelp: 'New tasks and unscoped settings use the default Host',
-      remoteTitle: 'Remote Hosts',
+      remoteTitle: 'Other Hosts',
       remoteDescription:
-        'Set up a computer over SSH, or connect an existing Runtime Host manually.',
+        'Set up a Runtime Host on an SSH computer or local WSL environment, or connect an existing Host manually.',
       addComputer: 'Add computer',
+      useConnectionCode: 'Use connection code',
       configureManually: 'Configure manually',
-      setupTitle: 'Add remote computer',
-      setupDescription: 'Install and connect Runtime Host over SSH',
+      thisComputerRemoteAccess: 'Remote access',
+      thisComputerRemoteAccessHelp: 'Reach this Host through experimental end-to-end direct connections, with automatic public coordination discovery',
+      remoteAccessOn: 'On',
+      remoteAccessOff: 'Off',
+      enableRemoteAccess: 'Enable',
+      disableRemoteAccess: 'Turn off connectivity',
+      disableRemoteAccessConfirm: 'Turn off remote connectivity?',
+      disableRemoteAccessDescription: 'This only stops Direct peer connectivity. Granted shared access is retained.',
+      revokeSharedAccess: 'Revoke shared access',
+      revokeSharedAccessConfirm: 'Revoke shared access?',
+      revokeSharedAccessDescription: 'The connected Desktop will be disconnected, and unused connection codes will stop working.',
+      revokeSharedAccessDone: 'Shared access revoked',
+      createConnectionCode: 'New connection code',
+      connectionCodeTitle: 'Connect to this computer',
+      connectionCodeDescription: 'Expires in 15 minutes and can be used once. The other Desktop receives Owner access. Direct peer has no fallback.',
+      importConnectionCodeTitle: 'Use a connection code',
+      importConnectionCodeDescription: 'Connecting grants this Desktop Owner access to the other Host. Direct peer has no fallback.',
+      connectionCode: 'Connection code',
+      copyConnectionCode: 'Copy connection code',
+      connectionCodeCopied: 'Connection code copied',
+      connectionCodeInvalid: 'The connection code is invalid.',
+      connectionCodeUnavailable: 'The connection code expired or was already used. Create a new code on the other computer.',
+      connectionCodeHostUnreachable: 'A Direct peer connection could not be established. Check that both computers are online and UDP is allowed.',
+      connectionCodeHostMismatch: 'The code does not match the connected Host, or the Host version is incompatible.',
+      connectionCodeUnknownError: 'The connection outcome is unknown. Check the remote Host list before retrying.',
+      connectWithCode: 'Connect',
+      remoteAccessActiveTasks: 'This computer still has running tasks',
+      remoteAccessActiveTasksDescription: 'Enabling remote access hands the Local Host to a system service. Interrupt the current tasks and continue?',
+      uninstallActiveTasksDescription: 'Removing the background service stops the current tasks. Interrupt them and continue?',
+      interruptAndEnable: 'Interrupt and enable',
+      interruptAndUninstall: 'Interrupt and remove',
+      remoteAccessFailed: 'Remote access failed',
+      setupTitle: 'Add Runtime Host',
+      setupDescription: 'Install and connect Runtime Host on an SSH computer or WSL environment',
       setupName: 'Display name (optional)',
+      setupTarget: 'Run on',
+      sshComputer: 'SSH computer',
+      wslEnvironment: 'WSL environment',
+      wslDistribution: 'WSL distribution',
       setupSshPort: 'SSH port (optional)',
       setupDirectoryRootsDescription: 'Leave empty to use the remote Home directory. When directories are added, only those locations can be browsed to add projects.',
       setupConnect: 'Connect',
@@ -746,6 +922,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       setupPhase: {
         preparing_cli: 'Preparing the local CLI…',
         connecting_ssh: 'Connecting over SSH…',
+        connecting_wsl: 'Connecting to the WSL environment…',
         checking_environment: 'Checking the remote environment…',
         installing_package: 'Installing Maka…',
         installing_service: 'Starting Runtime Host…',
@@ -801,7 +978,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
         failed: 'Failed',
       },
       directPeer: 'Direct peer (experimental)',
-      directPeerDescription: 'Create an independent experimental Direct profile. Restrictive NAT or blocked UDP may make it unreachable, and it does not fall back automatically; keep the SSH profile for manual recovery.',
+      directPeerDescription: 'Create an independent experimental Direct profile. Discover coordination peers automatically or provide them manually to assist hole punching; restrictive NAT or blocked UDP may still make it unreachable, and traffic does not fall back to a relay. Keep the SSH profile for manual recovery.',
       directPeerState: {
         unsupported: 'Update required',
         not_configured: 'Not configured',
@@ -817,10 +994,17 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       directPeerRoutes: 'Routes',
       directPeerCoordinationRelays: 'Connection coordination peers (optional)',
       directPeerCoordinationRelaysPlaceholder: 'Separate multiple addresses with commas',
+      directPeerAdvancedCoordination: 'Set coordination peers manually',
+      directPeerAutomaticRelayDiscovery: 'Discover coordination peers automatically',
+      directPeerAutomaticRelayDiscoveryHelp:
+        'Coordination peers use Circuit Relay v2 only to establish an end-to-end direct connection; they never carry application traffic. Maka discovers candidates through the public IPFS network on a best-effort basis, while manually configured peers remain preferred.',
       directPeerEnable: 'Enable and add',
       directPeerDisable: 'Disable',
       directPeerAddProfile: 'Add to Desktop',
       directPeerActionFailed: 'Direct peer action failed',
+      peerMesh: 'Peer Mesh',
+      peerMeshHelp: 'Manage private Mesh memberships and invitations for this Desktop peer',
+      managePeerMesh: 'Manage Peer Mesh',
       installedVersion: 'Version',
       operatingSystem: 'System',
       processId: 'Process ID',
@@ -844,6 +1028,8 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       refresh: 'Refresh',
       startService: 'Start',
       restartService: 'Restart',
+      restartActiveTasksDescription: 'Restarting stops the current tasks. Interrupt them and continue?',
+      restartInterrupt: 'Interrupt tasks and restart',
       repairService: 'Repair',
       updateService: 'Install matching version',
       updatePolicy: 'Update policy',
@@ -895,7 +1081,7 @@ const SETTINGS_PROJECTS_COPY_BY_LOCALE = {
       showLogs: 'View logs',
       noLogs: 'No service logs were found',
       uninstallService: 'Uninstall service',
-      uninstallConfirmTitle: 'Uninstall the remote Runtime Host?',
+      uninstallConfirmTitle: 'Uninstall this Runtime Host?',
       uninstallConfirmBody: 'This stops and removes the Maka-managed service and program, while preserving the State Root, projects, and task data. The Desktop profile is not removed.',
       uninstallConfirm: 'Uninstall service',
       uninstallRetained: (path: string) => `Service uninstalled. Data was retained at ${path}`,

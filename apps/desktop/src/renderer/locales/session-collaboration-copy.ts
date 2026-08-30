@@ -1,0 +1,202 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type { UiCatalog, UiLocale } from '@maka/core/ui-locale';
+
+const ZH_CN = {
+    shareAction: '分享此任务',
+    shareTitle: '分享任务',
+    shareDescription: '创建一次性邀请，让另一台 Maka 访问这个任务。',
+    enableRemoteAccessTitle: '先开启本机远程访问',
+    enableRemoteAccessBody: '已为你打开 Runtime Host 设置；开启远程访问后即可分享此任务。',
+    disclosureTitle: '分享前请确认',
+    disclosureBody:
+      '对方将看到这个任务已有和之后产生的全部可见内容，包括其中已经出现的文件路径、凭据或其他秘密。撤销访问只能阻止后续读取，无法收回对方已经复制的内容。',
+    accessLabel: '访问权限',
+    observe: '只读',
+    observeHelp: '查看完整历史和实时更新',
+    requestTurn: '可请求新轮次',
+    revokeTurnRequests: '撤销轮次请求权限',
+    requestTurnHelp: '查看完整内容，并提交需要你逐次批准的新轮次请求',
+    createInvitation: '创建邀请',
+    invitationCode: '一次性邀请码',
+    invitationHelp: '邀请码包含连接地址和访客凭据，不包含所有者凭据。',
+    copy: '复制邀请码',
+    copied: '邀请码已复制',
+    close: '完成',
+    activeAccess: '当前访问',
+    accessUnavailable: '共享管理暂时不可用；此窗口会自动重试。',
+    guest: '访客',
+    noAccess: '尚未分享给任何人',
+    pending: '待领取',
+    active: '已连接',
+    revoke: '撤销',
+    joinAction: '加入共享任务',
+    joinTitle: '加入共享任务',
+    joinDescription: '粘贴邀请码，建立独立的访客连接。',
+    code: '邀请码',
+    join: '加入',
+    invalidCode: '邀请码无效',
+    connectionFailed: '无法加入共享任务',
+    insecureTitle: '此连接未加密',
+    insecureBody: '访客凭据、完整任务内容和轮次请求可能被同一网络中的第三方截获。仅在你了解并接受风险时继续。',
+    shareInsecure: '接受风险并创建',
+    joinInsecure: '接受风险并加入',
+    sharedBadge: '共享',
+    turnRequests: '轮次请求',
+    noTurnRequests: '暂无轮次请求',
+    approve: '批准',
+    reject: '拒绝',
+    turnRequestPlaceholder: '描述你希望发起的新轮次',
+    submitTurnRequest: '请求新轮次',
+    turnRequestSent: '请求已提交，等待所有者批准',
+    turnRequestReconciling: '正在确认请求是否已被 Host 接收…',
+    turnRequestPending: '等待批准',
+    turnRequestApproved: '已批准',
+    turnRequestRejected: '已拒绝',
+    turnRequestStarted: '已开始',
+    turnRequestBlocked: '未能开始',
+    turnRequestFailed: '准入失败',
+    dismissTurnRequest: '关闭',
+};
+
+type SessionCollaborationCopy = {
+  readonly [Key in keyof typeof ZH_CN]: string;
+};
+
+const ZH_TW = {
+    shareAction: '分享此任務',
+    shareTitle: '分享任務',
+    shareDescription: '建立一次性邀請，讓另一台 Maka 存取這個任務。',
+    enableRemoteAccessTitle: '請先開啟本機遠端存取',
+    enableRemoteAccessBody: '已為你開啟 Runtime Host 設定；開啟遠端存取後即可分享此任務。',
+    disclosureTitle: '分享前請確認',
+    disclosureBody:
+      '對方將看到這個任務已有及之後產生的所有可見內容，包括其中已出現的檔案路徑、憑證或其他機密。撤銷存取只能阻止後續讀取，無法收回對方已複製的內容。',
+    accessLabel: '存取權限',
+    observe: '唯讀',
+    observeHelp: '檢視完整歷史記錄和即時更新',
+    requestTurn: '可請求新輪次',
+    revokeTurnRequests: '撤銷輪次請求權限',
+    requestTurnHelp: '檢視完整內容，並提出需要你逐次核准的新輪次請求',
+    createInvitation: '建立邀請',
+    invitationCode: '一次性邀請碼',
+    invitationHelp: '邀請碼包含連線位址和訪客憑證，不包含擁有者憑證。',
+    copy: '複製邀請碼',
+    copied: '已複製邀請碼',
+    close: '完成',
+    activeAccess: '目前存取',
+    accessUnavailable: '分享管理暫時無法使用；此視窗會自動重試。',
+    guest: '訪客',
+    noAccess: '尚未分享給任何人',
+    pending: '待領取',
+    active: '已連線',
+    revoke: '撤銷',
+    joinAction: '加入分享任務',
+    joinTitle: '加入分享任務',
+    joinDescription: '貼上邀請碼，建立獨立的訪客連線。',
+    code: '邀請碼',
+    join: '加入',
+    invalidCode: '邀請碼無效',
+    connectionFailed: '無法加入分享任務',
+    insecureTitle: '此連線未加密',
+    insecureBody: '訪客憑證、完整任務內容和輪次請求可能被同一網路中的第三方攔截。僅在你了解並接受風險時繼續。',
+    shareInsecure: '接受風險並建立',
+    joinInsecure: '接受風險並加入',
+    sharedBadge: '已分享',
+    turnRequests: '輪次請求',
+    noTurnRequests: '尚無輪次請求',
+    approve: '核准',
+    reject: '拒絕',
+    turnRequestPlaceholder: '描述你希望發起的新輪次',
+    submitTurnRequest: '請求新輪次',
+    turnRequestSent: '請求已送出，等待擁有者核准',
+    turnRequestReconciling: '正在確認 Host 是否已收到請求…',
+    turnRequestPending: '等待核准',
+    turnRequestApproved: '已核准',
+    turnRequestRejected: '已拒絕',
+    turnRequestStarted: '已開始',
+    turnRequestBlocked: '無法開始',
+    turnRequestFailed: '准入失敗',
+    dismissTurnRequest: '關閉',
+} satisfies SessionCollaborationCopy;
+
+const EN = {
+    shareAction: 'Share this task',
+    shareTitle: 'Share task',
+    shareDescription: 'Create a one-time invitation for another Maka installation.',
+    enableRemoteAccessTitle: 'Enable remote access first',
+    enableRemoteAccessBody:
+      'Runtime Host settings are open. Enable remote access there, then share this task.',
+    disclosureTitle: 'Confirm what will be shared',
+    disclosureBody:
+      'The Guest can read all existing and future visible content in this task, including paths, credentials, or other secrets already present. Revoking access stops future reads but cannot retract copied content.',
+    accessLabel: 'Access',
+    observe: 'Read only',
+    observeHelp: 'Read the full history and live updates',
+    requestTurn: 'Can request Turns',
+    revokeTurnRequests: 'Revoke Turn requests',
+    requestTurnHelp: 'Read the task and propose new Turns for your individual approval',
+    createInvitation: 'Create invitation',
+    invitationCode: 'One-time invitation code',
+    invitationHelp: 'The code contains the connection address and Guest credential, never the Owner credential.',
+    copy: 'Copy invitation',
+    copied: 'Invitation copied',
+    close: 'Done',
+    activeAccess: 'Current access',
+    accessUnavailable: 'Sharing controls are temporarily unavailable. This window will retry.',
+    guest: 'Guest',
+    noAccess: 'No one has access yet',
+    pending: 'Pending',
+    active: 'Connected',
+    revoke: 'Revoke',
+    joinAction: 'Join shared task',
+    joinTitle: 'Join shared task',
+    joinDescription: 'Paste an invitation to create an independent Guest connection.',
+    code: 'Invitation code',
+    join: 'Join',
+    invalidCode: 'The invitation code is invalid',
+    connectionFailed: 'Could not join the shared task',
+    insecureTitle: 'This connection is not encrypted',
+    insecureBody: 'The Guest credential, complete task content, and Turn requests may be intercepted by others on the network. Continue only if you understand and accept the risk.',
+    shareInsecure: 'Accept risk and create',
+    joinInsecure: 'Accept risk and join',
+    sharedBadge: 'Shared',
+    turnRequests: 'Turn requests',
+    noTurnRequests: 'No Turn requests yet',
+    approve: 'Approve',
+    reject: 'Reject',
+    turnRequestPlaceholder: 'Describe the new Turn you want to start',
+    submitTurnRequest: 'Request new Turn',
+    turnRequestSent: 'Request sent for Owner approval',
+    turnRequestReconciling: 'Checking whether the Host received this request…',
+    turnRequestPending: 'Awaiting approval',
+    turnRequestApproved: 'Approved',
+    turnRequestRejected: 'Rejected',
+    turnRequestStarted: 'Started',
+    turnRequestBlocked: 'Could not start',
+    turnRequestFailed: 'Admission failed',
+    dismissTurnRequest: 'Dismiss',
+} satisfies SessionCollaborationCopy;
+
+const COPY = { 'zh-CN': ZH_CN, 'zh-TW': ZH_TW, en: EN } satisfies UiCatalog<SessionCollaborationCopy>;
+
+export function getSessionCollaborationCopy(locale: UiLocale) {
+  return COPY[locale];
+}

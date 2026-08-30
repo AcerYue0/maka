@@ -40,6 +40,7 @@ import {
   type DurableRuntimeEventStore,
   type EvidenceReadBudget,
   type RootTurnAdmission,
+  type RootTurnAdmissionAuthorization,
   type RootTurnSourceMessageReceipt,
 } from './agent-run-store.js';
 import {
@@ -102,6 +103,7 @@ export type {
   EvidenceReadBudget,
   ImmutableSteeringMessageProof,
   RootTurnAdmission,
+  RootTurnAdmissionAuthorization,
   RootTurnAdmissionStore,
   RootTurnStartRejectionStore,
   RootTurnSourceMessage,
@@ -111,6 +113,7 @@ export type {
   RuntimeEventScanResult,
 } from './agent-run-store.js';
 export type {
+  MarkMessagesHandedOffInput,
   MessageAdmissionStore,
   PendingMessageAdmission,
 } from './message-admission-store.js';
@@ -125,6 +128,8 @@ export type {
   SessionHeaderSnapshot,
   SessionTranscriptMessageLookupRequest,
   SessionTranscriptPageRequest,
+  SessionTranscriptRecordScanPage,
+  SessionTranscriptRecordScanRequest,
   SessionTranscriptStoragePage,
   SessionTranscriptStorageFragment,
 } from './session-store.js';
@@ -173,7 +178,6 @@ export interface ExecutionSessionReader {
 
 export interface ExecutionAgentRunReader {
   readRun(sessionId: string, runId: string): Promise<AgentRunHeader>;
-  findRunsById(runId: string, limit: number): Promise<AgentRunIdentitySearchResult>;
   listSessionRuns(sessionId: string): Promise<AgentRunHeader[]>;
   listSessionRunsBounded(sessionId: string, limit: number): Promise<AgentRunIdentitySearchResult>;
   listSessionRunsPage(sessionId: string, input: AgentRunPageInput): Promise<AgentRunPageResult>;
@@ -353,6 +357,8 @@ async function createExecutionStoresForWrite<K extends StorageRootKind, E extend
         run(() => sessionStore.probeStableSessionCreate(sessionId, requestFingerprint)),
       createStableSession: (request, initialBoundary) =>
         run(() => sessionStore.createStableSession(request, initialBoundary)),
+      assignWorkHubMessage: (request) => run(() => sessionStore.assignWorkHubMessage(request)),
+      readWorkHubAssignment: (actionId) => run(() => sessionStore.readWorkHubAssignment(actionId)),
       discardStableConversationCopy: (sessionId, requestFingerprint) =>
         run(() => sessionStore.discardStableConversationCopy(sessionId, requestFingerprint)),
       createSubagent: (input, initialBoundary) =>
@@ -388,6 +394,8 @@ async function createExecutionStoresForWrite<K extends StorageRootKind, E extend
       readMessagesSnapshot: (sessionId) => run(() => sessionStore.readMessagesSnapshot(sessionId)),
       readTranscriptPageSnapshot: (sessionId, request) =>
         run(() => sessionStore.readTranscriptPageSnapshot(sessionId, request)),
+      readTranscriptRecordsSnapshot: (sessionId, request) =>
+        run(() => sessionStore.readTranscriptRecordsSnapshot(sessionId, request)),
       readTranscriptMessagesSnapshot: (sessionId, request) =>
         run(() => sessionStore.readTranscriptMessagesSnapshot(sessionId, request)),
       readTranscriptHighWaterSnapshot: (sessionId) =>
@@ -469,7 +477,6 @@ async function createExecutionStoresForWrite<K extends StorageRootKind, E extend
       updateRun: (sessionId, runId, patch, options) =>
         run(() => agentRunStore.updateRun(sessionId, runId, patch, options)),
       readRun: (sessionId, runId) => run(() => agentRunStore.readRun(sessionId, runId)),
-      findRunsById: (runId, limit) => run(() => agentRunStore.findRunsById(runId, limit)),
       listSessionRuns: (sessionId) => run(() => agentRunStore.listSessionRuns(sessionId)),
       listSessionRunsBounded: (sessionId, limit) =>
         run(() => agentRunStore.listSessionRunsBounded(sessionId, limit)),
@@ -614,7 +621,6 @@ async function openExecutionStoresForRead<K extends StorageRootKind, E extends o
     },
     agentRunStore: {
       readRun: (sessionId, runId) => run(() => agentRunStore.readRun(sessionId, runId)),
-      findRunsById: (runId, limit) => run(() => agentRunStore.findRunsById(runId, limit)),
       listSessionRuns: (sessionId) => run(() => agentRunStore.listSessionRuns(sessionId)),
       listSessionRunsBounded: (sessionId, limit) =>
         run(() => agentRunStore.listSessionRunsBounded(sessionId, limit)),

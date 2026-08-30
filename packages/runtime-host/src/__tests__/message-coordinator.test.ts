@@ -18,14 +18,25 @@
  */
 
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { messageContentDigest, type MessageContent } from '@maka/core/events';
 import type { RuntimeEvent } from '@maka/core/runtime-event';
+import {
+  WORKHUB_COORDINATION_SESSION_ID,
+  WORKHUB_COORDINATION_SESSION_ROLE,
+} from '@maka/core/session';
+import { RuntimeMessageAuthorityInvariantError } from '@maka/runtime/message-authority';
 import type {
+  MarkMessagesHandedOffInput,
   MessageAdmissionStore,
   PendingMessageAdmission,
   RootTurnSourceMessageReceipt,
 } from '@maka/storage/execution-stores';
+import { createSessionStore } from '@maka/storage/session-store';
 import {
   MESSAGE_OPERATION_RESULT_MAX_BYTES,
   MESSAGE_QUEUE_PROJECTION_MAX_BYTES,
@@ -43,6 +54,171 @@ import {
 import { SessionAdmissionGate } from '../server/session-admission-gate.js';
 
 const ROOT = { sessionId: 'session-1', turnId: 'turn-1', runId: 'run-1' } as const;
+
+test('consumes an active-target admission before the terminal transition can make it idle', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'maka-workhub-active-consume-'));
+  const store = createSessionStore(root);
+  t.after(async () => {
+    await store.close?.();
+    await rm(root, { recursive: true, force: true });
+  });
+  await store.createStableSession({
+    sessionId: WORKHUB_COORDINATION_SESSION_ID,
+    requestFingerprint: `sha256:${'a'.repeat(64)}`,
+    input: {
+      cwd: root,
+      name: 'WorkHub',
+      role: WORKHUB_COORDINATION_SESSION_ROLE,
+      llmConnectionSlug: 'test',
+      model: 'test',
+      permissionMode: 'explore',
+      toolProfile: 'workhub-coordination-v1',
+    },
+  });
+  await store.createStableSession({
+    sessionId: ROOT.sessionId,
+    requestFingerprint: `sha256:${'b'.repeat(64)}`,
+    input: {
+      cwd: root,
+      name: 'Payments',
+      llmConnectionSlug: 'test',
+      model: 'test',
+      permissionMode: 'ask',
+    },
+  });
+  const fixture = createFixture(undefined, () => true, store);
+  fixture.coordinator.reserveRootTurn(ROOT);
+  fixture.coordinator.bindRun(ROOT);
+  const content = { text: 'atomic WorkHub assignment' };
+  const actionId = 'action-active-target';
+  const suffix = createHash('sha256').update(actionId, 'utf8').digest('hex').slice(0, 48);
+  const messageId = `whm_${suffix}`;
+  await store.assignWorkHubMessage({
+    assignment: {
+      type: 'workhub_coordination',
+      id: `wha_${suffix}`,
+      turnId: actionId,
+      ts: 10,
+      schemaVersion: 1,
+      kind: 'delegation_assigned',
+      actionId,
+      actionFingerprint: `sha256:${'c'.repeat(64)}`,
+      coordinationTurnId: actionId,
+      targetSessionId: ROOT.sessionId,
+      targetSessionName: 'Payments',
+      targetTurnId: ROOT.turnId,
+      targetMessageId: messageId,
+      delegationId: `whd_${suffix}`,
+      disposition: 'delegate_existing',
+      userText: content.text,
+      steered: true,
+    },
+    admission: {
+      ...ROOT,
+      messageId,
+      content,
+      submittedContentDigest: messageContentDigest(content),
+      submittedPlacement: 'current_turn',
+      placement: 'current_turn',
+      disposition: 'steering',
+      admittedAt: 10,
+    },
+  });
+
+  const admitted = deferred<void>();
+  const releaseAdmission = deferred<void>();
+  const consume = fixture.sessionAdmission.run(ROOT.sessionId, async (lease) => {
+    admitted.resolve(undefined);
+    await releaseAdmission.promise;
+    await fixture.coordinator.consumePendingAdmissionsAdmitted(ROOT.sessionId, lease);
+  });
+  await admitted.promise;
+  const terminal = fixture.sessionAdmission.run(ROOT.sessionId, () => {
+    fixture.setRootState({ kind: 'idle' });
+  });
+  releaseAdmission.resolve(undefined);
+  await consume;
+  await terminal;
+
+  assert.equal(fixture.coordinator.projection(ROOT.sessionId).steering.length, 1);
+  assert.equal(fixture.recoveredBatches.length, 0);
+  assert.equal(fixture.drainRequests(), 0);
+});
+
+test('idle recovery resolves differently preassigned Messages to their shared successor Turn', async () => {
+  const fixture = createFixture();
+  fixture.setRootState({ kind: 'idle' });
+  for (const [messageId, turnId, runId] of [
+    ['workhub-message-a', 'preassigned-turn-a', 'preassigned-run-a'],
+    ['workhub-message-b', 'preassigned-turn-b', 'preassigned-run-b'],
+  ] as const) {
+    const content = { text: `recover ${messageId}` };
+    await fixture.admissions.commitMessageAdmission({
+      sessionId: ROOT.sessionId,
+      turnId,
+      runId,
+      messageId,
+      content,
+      submittedContentDigest: messageContentDigest(content),
+      submittedPlacement: 'current_turn',
+      placement: 'current_turn',
+      disposition: 'followup',
+      admittedAt: 10,
+    });
+  }
+
+  await fixture.coordinator.consumePendingAdmissions([ROOT.sessionId]);
+  const resolved = await fixture.coordinator.handlers['turn.message.execution.query'](
+    {
+      sessionId: ROOT.sessionId,
+      messageIds: ['workhub-message-a', 'workhub-message-b'],
+    },
+    operationContext(),
+  );
+
+  assert.deepEqual(resolved, {
+    ok: true,
+    result: {
+      resolutions: [
+        {
+          messageId: 'workhub-message-a',
+          state: 'owned',
+          turnId: 'recovered-turn',
+          runId: 'durable-run',
+        },
+        {
+          messageId: 'workhub-message-b',
+          state: 'owned',
+          turnId: 'recovered-turn',
+          runId: 'durable-run',
+        },
+      ],
+    },
+  });
+});
+
+test('idle recovery preserves the exact root identity of durable steering', async () => {
+  const fixture = createFixture();
+  fixture.setRootState({ kind: 'idle' });
+  const content = { text: 'recover exact steering' };
+  await fixture.admissions.commitMessageAdmission({
+    ...ROOT,
+    messageId: 'workhub-message',
+    content,
+    submittedContentDigest: messageContentDigest(content),
+    submittedPlacement: 'current_turn',
+    placement: 'current_turn',
+    disposition: 'steering',
+    admittedAt: 10,
+  });
+
+  await fixture.coordinator.consumePendingAdmissions([ROOT.sessionId]);
+
+  assert.deepEqual(fixture.recoveredBatches[0]?.rootIdentity, {
+    turnId: ROOT.turnId,
+    runId: ROOT.runId,
+  });
+});
 
 test('idle submit starts exactly one root Turn and retry identity is connection-independent', async () => {
   const fixture = createFixture();
@@ -116,20 +292,10 @@ test('message query reports only durable cancellation proof', async () => {
   await submit(fixture, 'cancelled-message', 'discard me', 'next_turn');
   await submit(fixture, 'accepted-message', 'waiting', 'next_turn');
   await fixture.coordinator.cancelMessages(ROOT.sessionId, ['cancelled-message']);
-  fixture.receipts.set(
-    'handed-off-message',
-    sourceReceipt('handed-off-message', 'delivered', 'current_turn', 'steering'),
-  );
-
   const result = await fixture.coordinator.handlers['turn.message.query'](
     {
       sessionId: ROOT.sessionId,
-      messageIds: [
-        'cancelled-message',
-        'accepted-message',
-        'handed-off-message',
-        'unknown-message',
-      ],
+      messageIds: ['cancelled-message', 'accepted-message', 'unknown-message'],
     },
     operationContext(),
   );
@@ -137,6 +303,64 @@ test('message query reports only durable cancellation proof', async () => {
   assert.deepEqual(result, {
     ok: true,
     result: { cancelledMessageIds: ['cancelled-message'] },
+  });
+});
+
+test('message execution query reports the Turn that durably owns each Message', async () => {
+  const fixture = createFixture();
+  const pendingContent = { text: 'not handed off yet' };
+  await fixture.admissions.commitMessageAdmission({
+    ...ROOT,
+    messageId: 'pending-message',
+    content: pendingContent,
+    submittedContentDigest: messageContentDigest(pendingContent),
+    submittedPlacement: 'current_turn',
+    placement: 'current_turn',
+    disposition: 'steering',
+    admittedAt: 10,
+  });
+  fixture.receipts.set(
+    'handed-off-message',
+    sourceReceipt(
+      'handed-off-message',
+      'delivered by successor',
+      'current_turn',
+      'steering',
+      'successor-turn',
+    ),
+  );
+  fixture.events.push(steeringEvent('steered-message', 'consumed by admission Turn'));
+
+  const result = await fixture.coordinator.handlers['turn.message.execution.query'](
+    {
+      sessionId: ROOT.sessionId,
+      messageIds: ['pending-message', 'handed-off-message', 'steered-message', 'unknown-message'],
+    },
+    operationContext(),
+  );
+
+  assert.deepEqual(result, {
+    ok: true,
+    result: {
+      resolutions: [
+        {
+          messageId: 'pending-message',
+          state: 'pending',
+        },
+        {
+          messageId: 'handed-off-message',
+          state: 'owned',
+          turnId: 'successor-turn',
+          runId: 'durable-run',
+        },
+        {
+          messageId: 'steered-message',
+          state: 'owned',
+          turnId: ROOT.turnId,
+          runId: ROOT.runId,
+        },
+      ],
+    },
   });
 });
 
@@ -656,6 +880,18 @@ test('entry retract removes one queued entry, replays its outcome, and rejects s
   assert.deepEqual(
     fixture.coordinator.projection(ROOT.sessionId).steering.map((entry) => entry.messageId),
     ['steer-1'],
+  );
+  assert.deepEqual(
+    await fixture.coordinator.handlers['turn.message.execution.query'](
+      { sessionId: ROOT.sessionId, messageIds: ['follow-1'] },
+      operationContext(),
+    ),
+    {
+      ok: true,
+      result: {
+        resolutions: [{ messageId: 'follow-1', state: 'cancelled' }],
+      },
+    },
   );
 
   const retry = await fixture.coordinator.handlers['queue.entry.retract'](
@@ -1690,8 +1926,89 @@ test('run settlement hands off only steering admissions with immutable proof', a
   });
 
   assert.equal(fixture.readMessageAdmission('steer-proved'), undefined);
+  assert.deepEqual(fixture.handoffCalls, [
+    {
+      sessionId: ROOT.sessionId,
+      messageIds: ['steer-proved'],
+      turnId: ROOT.turnId,
+    },
+  ]);
   const batch = fixture.coordinator.beginTerminalTransition(ROOT);
   fixture.coordinator.completeIdle(batch);
+});
+
+test('run materialization preserves exact Root source receipt fallback order', async () => {
+  const fixture = createFixture();
+  fixture.receipts.set('exact-root', matchingSourceReceipt('exact-root', 42));
+  fixture.receipts.set('exact-second', matchingSourceReceipt('exact-second', 43));
+
+  await fixture.coordinator.materializeMessageHandoffsForRun({
+    ...ROOT,
+    messageIds: ['exact-root', 'exact-second', 'exact-root'],
+  });
+
+  assert.deepEqual(fixture.handoffCalls, [
+    {
+      sessionId: ROOT.sessionId,
+      turnId: ROOT.turnId,
+      messageIds: ['exact-root', 'exact-second'],
+      provenRootMessages: [
+        {
+          messageId: 'exact-root',
+          content: { text: 'canonical exact-root' },
+          admittedAt: 42,
+        },
+        {
+          messageId: 'exact-second',
+          content: { text: 'canonical exact-second' },
+          admittedAt: 43,
+        },
+      ],
+    },
+  ]);
+});
+
+test('run materialization rejects the whole requested Root batch when any receipt mismatches', async () => {
+  const mismatches: Array<{
+    messageId: string;
+    receipt?: RootTurnSourceMessageReceipt;
+  }> = [
+    { messageId: 'proof-less' },
+    {
+      messageId: 'wrong-session',
+      receipt: matchingSourceReceipt('wrong-session', 10, { sessionId: 'other' }),
+    },
+    {
+      messageId: 'wrong-turn',
+      receipt: matchingSourceReceipt('wrong-turn', 11, { turnId: 'other' }),
+    },
+    {
+      messageId: 'wrong-run',
+      receipt: matchingSourceReceipt('wrong-run', 12, { runId: 'other' }),
+    },
+    {
+      messageId: 'wrong-message',
+      receipt: matchingSourceReceipt('other-message', 13),
+    },
+  ];
+
+  for (const mismatch of mismatches) {
+    const fixture = createFixture();
+    fixture.receipts.set('exact-root', matchingSourceReceipt('exact-root', 42));
+    if (mismatch.receipt) fixture.receipts.set(mismatch.messageId, mismatch.receipt);
+
+    await assert.rejects(
+      () =>
+        fixture.coordinator.materializeMessageHandoffsForRun({
+          ...ROOT,
+          messageIds: ['exact-root', mismatch.messageId],
+        }),
+      (error: unknown) =>
+        error instanceof RuntimeMessageAuthorityInvariantError &&
+        error.message === `Root admission does not prove Message handoff ${mismatch.messageId}`,
+    );
+    assert.deepEqual(fixture.handoffCalls, []);
+  }
 });
 
 test('a failed terminal root leaves no handed-off payload for restart recovery', async () => {
@@ -2250,6 +2567,7 @@ test('canonical retry omits redundant display text and empty ordered refs', asyn
 function createFixture(
   onProjectionChanged?: (sessionId: string) => void,
   preflightSessionSnapshot: HostMessageCoordinatorOptions['preflightSessionSnapshot'] = () => true,
+  admissionsOverride?: MessageAdmissionStore,
 ) {
   let nextId = 1;
   let liveResidencies = 0;
@@ -2277,7 +2595,13 @@ function createFixture(
       state: 'accepted' | 'handed_off' | 'executed' | 'cancelled';
     }
   >();
-  const admissions = memoryMessageAdmissionStore(messageAdmissions);
+  const handoffCalls: MarkMessagesHandedOffInput[] = [];
+  const admissions =
+    admissionsOverride ??
+    memoryMessageAdmissionStore(messageAdmissions, (input) => {
+      handoffCalls.push(input);
+    });
+  const sessionAdmission = new SessionAdmissionGate();
   const stopClaimed = deferred<void>();
   const terminal = deferred<TurnSnapshot>();
   let coordinator: HostMessageCoordinator;
@@ -2384,7 +2708,7 @@ function createFixture(
       },
     },
     admissions,
-    sessionAdmission: new SessionAdmissionGate(),
+    sessionAdmission,
     acquireResidency: () => {
       liveResidencies += 1;
       let released = false;
@@ -2407,6 +2731,7 @@ function createFixture(
   return {
     coordinator,
     admissions,
+    sessionAdmission,
     setRootState: (state: HostMessageRootState) => {
       rootState = state;
     },
@@ -2417,6 +2742,7 @@ function createFixture(
     events,
     receipts,
     recoveredBatches,
+    handoffCalls,
     readMessageAdmission: (messageId: string) => messageAdmissions.get(messageId)?.admission,
     stopClaimed,
     resolveTerminal: terminal.resolve,
@@ -2441,6 +2767,7 @@ function memoryMessageAdmissionStore(
       state: 'accepted' | 'handed_off' | 'executed' | 'cancelled';
     }
   >,
+  onMessagesHandedOff?: (input: MarkMessagesHandedOffInput) => void,
 ): MessageAdmissionStore {
   return {
     commitMessageAdmission: async (admission) => {
@@ -2470,7 +2797,9 @@ function memoryMessageAdmissionStore(
         }
       }
     },
-    markMessagesHandedOff: async ({ messageIds }) => {
+    markMessagesHandedOff: async (input) => {
+      onMessagesHandedOff?.(input);
+      const { messageIds } = input;
       for (const messageId of messageIds) admissions.delete(messageId);
     },
   };
@@ -2538,6 +2867,29 @@ function sourceReceipt(
       admittedAt: 1,
     },
     sourceMessage,
+  };
+}
+
+function matchingSourceReceipt(
+  messageId: string,
+  admittedAt: number,
+  overrides: Partial<RootTurnSourceMessageReceipt['admission']> = {},
+): RootTurnSourceMessageReceipt {
+  const base = sourceReceipt(
+    messageId,
+    { text: `canonical ${messageId}` },
+    'current_turn',
+    'steering',
+    ROOT.turnId,
+  );
+  return {
+    ...base,
+    admission: {
+      ...base.admission,
+      runId: ROOT.runId,
+      admittedAt,
+      ...overrides,
+    },
   };
 }
 

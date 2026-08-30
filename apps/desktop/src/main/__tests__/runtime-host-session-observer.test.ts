@@ -594,6 +594,7 @@ test('fences transcript range failures across same-source replica recovery', asy
           events,
           transcriptBootstrap: {
             throughSequence: 1,
+            durableCoverage: 'complete',
             overlayMessageCount: 0,
             durable: bootstrap,
             overlay: { ...bootstrap, source: 'overlay', nextCursor: null },
@@ -887,6 +888,7 @@ test('finishes transcript open and replays a stale range request after replaceme
           events,
           transcriptBootstrap: {
             throughSequence: 0,
+            durableCoverage: 'complete',
             overlayMessageCount: 0,
             durable: {
               kind: 'page',
@@ -1629,9 +1631,10 @@ test("abandons a watched Turn when the initial Host subscription fails", async (
   await observer.close();
 });
 
-test("abandons a watched Turn when the Session is removed", async () => {
+test("abandons a watched Turn and removes it from the catalog when Guest access ends", async () => {
   const events = new AsyncFrameQueue();
   const finishedTurns: Array<[string, "completed" | "abandoned"]> = [];
+  const sessionChanges: string[] = [];
   let closeCount = 0;
   const observer = new RuntimeHostSessionObserver({
     client: {
@@ -1646,7 +1649,9 @@ test("abandons a watched Turn when the Session is removed", async () => {
         },
       }),
     },
-    emitSessionsChanged() {},
+    emitSessionsChanged(reason) {
+      sessionChanges.push(reason);
+    },
     onWatchedTurnFinished: (sessionId, outcome) => {
       finishedTurns.push([sessionId, outcome]);
     },
@@ -1658,11 +1663,12 @@ test("abandons a watched Turn when the Session is removed", async () => {
     hostEpoch: "host-1",
     subscriptionId: "subscription-1",
     sequence: 1,
-    reason: "session_removed",
+    reason: "access_revoked",
   });
 
   await waitFor(() => closeCount === 1);
   assert.deepEqual(finishedTurns, [["session-1", "abandoned"]]);
+  assert.deepEqual(sessionChanges, ["deleted"]);
   await observer.close();
 });
 

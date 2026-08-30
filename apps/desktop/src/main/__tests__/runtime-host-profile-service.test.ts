@@ -25,6 +25,7 @@ import { afterEach, test } from "node:test";
 import {
   createClientRuntimeHostCredentialStore,
   createClientRuntimeHostProfileCatalog,
+  encodeRuntimeHostOwnerConnectionCode,
   LOCAL_RUNTIME_HOST_PROFILE,
   RuntimeHostPermanentReconnectError,
   RuntimeHostRemoteCompatibilityError,
@@ -34,6 +35,7 @@ import {
   INTERACTIVE_RUNTIME_HOST_COMPOSITION_ID,
   RUNTIME_HOST_COMPATIBILITY_EPOCH,
   RUNTIME_HOST_PROTOCOL_VERSION,
+  encodeCollaborationInvitationCode,
 } from "@maka/runtime-host/protocol";
 import {
   RuntimeHostPairingFinalizationInterruptedError,
@@ -48,6 +50,7 @@ import {
   createDesktopRuntimeHostProfileService,
   resolveDesktopRuntimeHostStartup,
 } from "../runtime-host-profile-service.js";
+import { encodeDesktopCollaborationInvitation } from '../runtime-host-collaboration-invitation.js';
 
 const ROOT_ID = "a".repeat(64);
 const PROFILE = {
@@ -68,9 +71,15 @@ const MANAGED_PROFILE = {
   },
 };
 const MANAGED_SERVICE = {
-  id: "c".repeat(64),
-  rootPath: "/srv/maka",
-  operatorPath: "/home/operator/.local/share/maka/operator",
+  deployment: {
+    id: "c".repeat(64),
+    rootPath: "/srv/maka",
+    deploymentId: "11111111-1111-4111-8111-111111111111",
+  },
+  control: {
+    kind: "ssh_operator" as const,
+    operatorPath: "/home/operator/.local/share/maka/operator",
+  },
 };
 const READY_PROFILE = {
   id: "backup",
@@ -494,6 +503,141 @@ test("keeps a separate profile when the same Host is paired through another conn
   assert.equal((await catalog.resolve("replacement")).credential, "new-token");
 });
 
+test('imports shared access without requiring or persisting an Owner credential', async () => {
+  const root = await clientRoot();
+  const catalog = createClientRuntimeHostProfileCatalog(root);
+  const startup = await resolveDesktopRuntimeHostStartup(root, { catalog });
+  const connected: ResolvedRuntimeHostProfile[] = [];
+  const finalized: string[] = [];
+  const service = createDesktopRuntimeHostProfileService({
+    clientDataRoot: root,
+    startup,
+    catalog,
+    states: () => [connectingLocal()],
+    enable: async (target) => {
+      connected.push(target);
+    },
+    disable: async () => undefined,
+    setDefault: () => undefined,
+    finalizePairing: async (profileId) => {
+      finalized.push(profileId);
+    },
+  });
+
+  const result = await service.importCollaborationInvitation(
+    encodeDesktopCollaborationInvitation({
+      invitationCode: encodeCollaborationInvitationCode({
+        schemaVersion: 1,
+        rootId: ROOT_ID,
+        credential: 'guest-token',
+      }),
+      target: {
+        name: PROFILE.name,
+        transport: PROFILE.transport,
+      },
+    }),
+    false,
+  );
+
+  assert.equal(result.kind, 'connected');
+  if (result.kind !== 'connected') return;
+  assert.equal((await catalog.read()).profiles.length, 1);
+  const sharedProfileId = connected[0]?.profile.id;
+  assert.ok(sharedProfileId);
+  const shared = await catalog.resolve(sharedProfileId);
+  assert.equal(shared.profile.kind, 'remote');
+  assert.equal(shared.profile.kind === 'remote' ? shared.profile.access : undefined, 'session_guest');
+  assert.equal(shared.credential, 'guest-token');
+  assert.deepEqual(finalized, [sharedProfileId]);
+});
+
+test('requires explicit confirmation before importing plaintext shared access', async () => {
+  const root = await clientRoot();
+  const catalog = createClientRuntimeHostProfileCatalog(root);
+  const startup = await resolveDesktopRuntimeHostStartup(root, { catalog });
+  const connected: ResolvedRuntimeHostProfile[] = [];
+  const service = createDesktopRuntimeHostProfileService({
+    clientDataRoot: root,
+    startup,
+    catalog,
+    states: () => [connectingLocal()],
+    enable: async (target) => {
+      connected.push(target);
+    },
+    disable: async () => undefined,
+    setDefault: () => undefined,
+    finalizePairing: async () => undefined,
+  });
+
+  const code = encodeDesktopCollaborationInvitation({
+    invitationCode: encodeCollaborationInvitationCode({
+      schemaVersion: 1,
+      rootId: ROOT_ID,
+      credential: 'guest-token',
+    }),
+    target: {
+      name: 'Lab',
+      transport: {
+        kind: 'plaintext',
+        url: 'ws://runtime.example.com',
+        acknowledgement: 'plaintext-bearer-v1',
+      },
+    },
+  });
+  assert.deepEqual(await service.importCollaborationInvitation(code, false), {
+    kind: 'error',
+    reason: 'insecure_confirmation_required',
+  });
+  assert.equal(connected.length, 0);
+
+  const result = await service.importCollaborationInvitation(code, true);
+  assert.equal(result.kind, 'connected');
+  assert.equal(connected[0]?.profile.kind, 'remote');
+  assert.equal(
+    connected[0]?.profile.kind === 'remote' ? connected[0].profile.transport.kind : undefined,
+    'plaintext',
+  );
+});
+
+test('classifies connection-code failures without exposing transport errors to the renderer', async () => {
+  const root = await clientRoot();
+  const startup = await resolveDesktopRuntimeHostStartup(root);
+  const service = createDesktopRuntimeHostProfileService({
+    clientDataRoot: root,
+    startup,
+    states: () => [connectingLocal()],
+    enable: async () => {
+      throw new RuntimeHostPermanentReconnectError(
+        'Runtime Host profile candidate rejected its access credential',
+      );
+    },
+    disable: async () => undefined,
+    setDefault: () => undefined,
+    finalizePairing: async () => undefined,
+  });
+
+  assert.deepEqual(await service.importConnectionCode('not-a-code'), {
+    kind: 'error',
+    reason: 'invalid_code',
+  });
+  assert.deepEqual(
+    await service.importConnectionCode(
+      encodeRuntimeHostOwnerConnectionCode({
+        name: 'Other computer',
+        rootId: ROOT_ID,
+        transport: {
+          kind: 'libp2p-direct',
+          peerId: '12D3KooWpeer',
+          routeHints: ['/ip4/192.0.2.8/udp/44001/quic-v1'],
+          coordinationRelays: [],
+        },
+        credential: 'pending-credential',
+      }),
+    ),
+    { kind: 'error', reason: 'code_unavailable' },
+  );
+});
+
 test("finishes a persisted pairing after Desktop restarts before finalization", async () => {
   const root = await clientRoot();
   const catalog = await stageInterruptedPairing(root);
@@ -742,8 +886,10 @@ test("does not rotate a managed credential after its profile target changes", as
   };
   const replacementService = {
     ...MANAGED_SERVICE,
-    id: "e".repeat(64),
-    rootPath: "/srv/other-maka",
+    deployment: {
+      id: "e".repeat(64),
+      rootPath: "/srv/other-maka",
+    },
   };
   await catalog.remove(MANAGED_PROFILE.id);
   await catalog.create(replacementProfile, "other-token");

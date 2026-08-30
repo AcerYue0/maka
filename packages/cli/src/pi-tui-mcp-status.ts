@@ -18,29 +18,91 @@
  */
 
 import {
+  Editor,
   Key,
   matchesKey,
   truncateToWidth,
   visibleWidth,
   type Component,
+  type TUI,
 } from '@earendil-works/pi-tui';
+import type { McpProtocolPreference, McpServerConfig } from '@maka/core/mcp';
 import type { UiLocale } from '@maka/core/ui-locale';
 import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
-import type { TuiMcpServerSnapshot, TuiMcpSurface } from './tui-mcp-control.js';
-import { ansi } from './tui-ansi.js';
+import { normalizeMcpConfig } from '@maka/storage/mcp-config-store';
+import type {
+  TuiMcpAction,
+  TuiMcpActionResult,
+  TuiMcpImportPreview,
+  TuiMcpManagement,
+  TuiMcpServerSnapshot,
+} from './tui-mcp-control.js';
+import { ansi, editorTheme } from './tui-ansi.js';
 
 const CHROME_ROWS = 2;
 
-export class McpStatusOverlay implements Component {
+type GuidedDraft = {
+  serverId: string;
+  transport?: 'stdio' | 'remote';
+  command?: string;
+  args?: string[];
+  url?: string;
+  cwd?: string;
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  protocol?: McpProtocolPreference;
+};
+
+type InputKind =
+  | 'server_id'
+  | 'command'
+  | 'args'
+  | 'url'
+  | 'cwd'
+  | 'env'
+  | 'headers'
+  | 'edit'
+  | 'import';
+
+type McpOverlayPhase =
+  | { kind: 'list' }
+  | { kind: 'add_choice' }
+  | { kind: 'transport'; draft: GuidedDraft }
+  | { kind: 'protocol'; draft: GuidedDraft }
+  | {
+      kind: 'input';
+      input: InputKind;
+      draft?: GuidedDraft;
+      serverId?: string;
+      revision?: string;
+    }
+  | { kind: 'confirm_add'; draft: GuidedDraft }
+  | { kind: 'confirm_import'; preview: TuiMcpImportPreview }
+  | { kind: 'confirm_remove'; serverId: string }
+  | { kind: 'busy'; label: string };
+
+/** One in-frame state machine for status, editing, confirmation, and errors.
+ * Raw config values live only in the editor and are cleared on every exit;
+ * no management result is written into the conversation transcript. */
+export class McpManagementOverlay implements Component {
   private top = 0;
   private documentRows = 0;
   private bodyRows = 0;
+  private selected = 0;
+  private serverRows: { start: number; end: number }[] = [];
+  private phase: McpOverlayPhase = { kind: 'list' };
+  private notice: { level: 'info' | 'error'; text: string } | undefined;
   private readonly dispose: () => void;
+  private editor: Editor | undefined;
+  private closed = false;
+  private actionAttempt = 0;
 
   constructor(
     private readonly input: {
       readonly locale: UiLocale;
-      readonly surface?: TuiMcpSurface;
+      readonly tui?: TUI;
+      readonly surface?: TuiMcpManagement;
+      canManage?(): boolean;
       viewportRows(): number;
       onClose(): void;
       onChange(): void;
@@ -49,20 +111,53 @@ export class McpStatusOverlay implements Component {
     this.dispose = input.surface?.subscribe(input.onChange) ?? (() => undefined);
   }
 
-  invalidate(): void {}
+  invalidate(): void {
+    this.editor?.invalidate();
+  }
 
   handleInput(data: string): void {
-    if (matchesKey(data, Key.escape) || matchesKey(data, 'q')) {
-      this.dispose();
-      this.input.onClose();
+    if (this.phase.kind === 'input') {
+      if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl('c'))) {
+        this.backToList();
+      } else {
+        this.editor?.handleInput(data);
+      }
       return;
     }
-    if (matchesKey(data, Key.up)) this.scrollBy(-1);
-    else if (matchesKey(data, Key.down)) this.scrollBy(1);
-    else if (matchesKey(data, Key.pageUp)) this.scrollBy(-Math.max(1, this.bodyRows));
-    else if (matchesKey(data, Key.pageDown)) this.scrollBy(Math.max(1, this.bodyRows));
-    else if (matchesKey(data, Key.home)) this.scrollTo(0);
-    else if (matchesKey(data, Key.end)) this.scrollTo(this.maxTop());
+    if (this.phase.kind === 'busy') {
+      if (matchesKey(data, Key.escape)) {
+        this.actionAttempt += 1;
+        this.backToList();
+      } else if (matchesKey(data, 'q')) {
+        this.actionAttempt += 1;
+        this.close();
+      }
+      return;
+    }
+    if (matchesKey(data, Key.escape) || matchesKey(data, 'q')) {
+      if (this.phase.kind === 'list') this.close();
+      else this.backToList();
+      return;
+    }
+    if (this.phase.kind === 'list') this.handleListInput(data);
+    else if (this.phase.kind === 'add_choice') this.handleAddChoice(data);
+    else if (this.phase.kind === 'transport') this.handleTransport(data);
+    else if (this.phase.kind === 'protocol') this.handleProtocol(data);
+    else if (this.phase.kind === 'confirm_add' && matchesKey(data, 'y')) {
+      try {
+        const config = guidedConfig(this.phase.draft);
+        if (config) {
+          void this.runAction({ kind: 'add', serverId: this.phase.draft.serverId, config });
+        }
+      } catch {
+        this.notice = { level: 'error', text: copy(this.input.locale, 'invalid') };
+        this.backToList(false);
+      }
+    } else if (this.phase.kind === 'confirm_import' && matchesKey(data, 'y')) {
+      void this.runAction({ kind: 'commit_import', previewId: this.phase.preview.previewId });
+    } else if (this.phase.kind === 'confirm_remove' && matchesKey(data, 'y')) {
+      void this.runAction({ kind: 'remove', serverId: this.phase.serverId });
+    }
   }
 
   render(width: number): string[] {
@@ -70,8 +165,9 @@ export class McpStatusOverlay implements Component {
     const viewportRows = Math.max(1, Math.floor(this.input.viewportRows()));
     const showFooter = viewportRows > 2;
     this.bodyRows = Math.max(0, viewportRows - (showFooter ? CHROME_ROWS : 1));
-    const document = this.document();
+    const document = this.document(safeWidth);
     this.documentRows = document.length;
+    this.keepSelectionVisible();
     this.top = clamp(this.top, 0, this.maxTop());
     const visible = document.slice(this.top, this.top + this.bodyRows);
     const start = visible.length === 0 ? 0 : this.top + 1;
@@ -88,83 +184,364 @@ export class McpStatusOverlay implements Component {
       ),
     ];
     if (!showFooter) return [header, ...body];
-    const footer = localized(
-      this.input.locale,
-      '↑/↓ 滚动 · PgUp/PgDn 翻页 · Home/End 跳转 · q/Esc 关闭',
-      '↑/↓ 捲動 · PgUp/PgDn 翻頁 · Home/End 跳至 · q/Esc 關閉',
-      '↑/↓ scroll · PgUp/PgDn page · Home/End jump · q/Esc close',
-    );
-    return [header, ...body, padLine(ansi.dim(footer), safeWidth)];
+    return [header, ...body, padLine(ansi.dim(this.footer()), safeWidth)];
   }
 
-  private document(): string[] {
+  private management(): TuiMcpManagement | undefined {
+    return this.input.surface;
+  }
+
+  private handleListInput(data: string): void {
+    const servers = this.input.surface?.snapshot().servers ?? [];
+    if (matchesKey(data, Key.up)) {
+      this.selected = clamp(this.selected - 1, 0, servers.length - 1);
+    } else if (matchesKey(data, Key.down)) {
+      this.selected = clamp(this.selected + 1, 0, servers.length - 1);
+    } else if (matchesKey(data, Key.pageUp)) {
+      this.moveSelectionByPage(-1, servers.length);
+    } else if (matchesKey(data, Key.pageDown)) {
+      this.moveSelectionByPage(1, servers.length);
+    } else if (matchesKey(data, Key.home)) this.selected = 0;
+    else if (matchesKey(data, Key.end)) this.selected = Math.max(0, servers.length - 1);
+    else if (matchesKey(data, 'a') && this.management()) this.phase = { kind: 'add_choice' };
+    else {
+      const server = servers[this.selected];
+      if (!server || !this.management()) return;
+      if (matchesKey(data, Key.enter)) this.startEdit(server.serverId);
+      else if (matchesKey(data, Key.space)) {
+        void this.runAction({
+          kind: 'set_enabled',
+          serverId: server.serverId,
+          enabled: !server.enabled,
+        });
+      } else if (matchesKey(data, 't')) {
+        void this.runAction({ kind: 'test', serverId: server.serverId });
+      } else if (matchesKey(data, 'r')) {
+        void this.runAction({ kind: 'reconnect', serverId: server.serverId });
+      } else if (matchesKey(data, 'd') && server.configured) {
+        this.phase = { kind: 'confirm_remove', serverId: server.serverId };
+      }
+    }
+    this.input.onChange();
+  }
+
+  private handleAddChoice(data: string): void {
+    if (matchesKey(data, 'g')) this.startInput('server_id', { serverId: '' });
+    else if (matchesKey(data, 'j')) this.startInput('import');
+  }
+
+  private handleTransport(data: string): void {
+    if (this.phase.kind !== 'transport') return;
+    if (matchesKey(data, '1')) {
+      this.phase.draft.transport = 'stdio';
+      this.startInput('command', this.phase.draft);
+    } else if (matchesKey(data, '2')) {
+      this.phase.draft.transport = 'remote';
+      this.startInput('url', this.phase.draft);
+    }
+  }
+
+  private handleProtocol(data: string): void {
+    if (this.phase.kind !== 'protocol') return;
+    const protocol = matchesKey(data, '1')
+      ? 'legacy'
+      : matchesKey(data, '2')
+        ? 'auto'
+        : matchesKey(data, '3')
+          ? '2026-07-28'
+          : undefined;
+    if (!protocol) return;
+    this.phase.draft.protocol = protocol;
+    this.startInput(this.phase.draft.transport === 'stdio' ? 'cwd' : 'headers', this.phase.draft);
+  }
+
+  private startEdit(serverId: string): void {
+    const edit = this.management()?.configForEdit(serverId);
+    if (!edit) {
+      this.notice = { level: 'error', text: copy(this.input.locale, 'missing') };
+      return;
+    }
+    this.startInput(
+      'edit',
+      undefined,
+      serverId,
+      edit.revision,
+      JSON.stringify(edit.config, null, 2),
+    );
+  }
+
+  private startInput(
+    input: InputKind,
+    draft?: GuidedDraft,
+    serverId?: string,
+    revision?: string,
+    value = '',
+  ): void {
+    if (!this.input.tui) return;
+    this.clearEditor();
+    this.notice = undefined;
+    this.phase = { kind: 'input', input, draft, serverId, revision };
+    this.editor = new Editor(this.input.tui, editorTheme(), { paddingX: 0 });
+    this.editor.onSubmit = (submitted) => this.submitInput(submitted);
+    this.editor.setText(value);
+    this.editor.focused = true;
+    this.input.onChange();
+  }
+
+  private submitInput(value: string): void {
+    if (this.phase.kind !== 'input') return;
+    const phase = this.phase;
+    const trimmed = value.trim();
+    try {
+      if (phase.input === 'server_id') {
+        if (!trimmed) throw new Error();
+        const draft = phase.draft ?? { serverId: '' };
+        draft.serverId = trimmed;
+        this.clearEditor();
+        this.phase = { kind: 'transport', draft };
+      } else if (phase.input === 'command') {
+        if (!trimmed || !phase.draft) throw new Error();
+        phase.draft.command = trimmed;
+        this.startInput('args', phase.draft);
+      } else if (phase.input === 'args') {
+        if (!phase.draft) throw new Error();
+        phase.draft.args = trimmed ? stringArray(trimmed) : undefined;
+        this.clearEditor();
+        this.phase = { kind: 'protocol', draft: phase.draft };
+      } else if (phase.input === 'url') {
+        if (!trimmed || !phase.draft) throw new Error();
+        phase.draft.url = trimmed;
+        this.clearEditor();
+        this.phase = { kind: 'protocol', draft: phase.draft };
+      } else if (phase.input === 'cwd') {
+        if (!phase.draft) throw new Error();
+        phase.draft.cwd = trimmed || undefined;
+        this.startInput('env', phase.draft);
+      } else if (phase.input === 'env') {
+        if (!phase.draft) throw new Error();
+        phase.draft.env = trimmed ? stringMap(trimmed) : undefined;
+        this.clearEditor();
+        this.phase = { kind: 'confirm_add', draft: phase.draft };
+      } else if (phase.input === 'headers') {
+        if (!phase.draft) throw new Error();
+        phase.draft.headers = trimmed ? stringMap(trimmed) : undefined;
+        this.clearEditor();
+        this.phase = { kind: 'confirm_add', draft: phase.draft };
+      } else if (phase.input === 'edit') {
+        if (!phase.serverId || !phase.revision) throw new Error();
+        const config = normalizeOneServer(phase.serverId, trimmed);
+        this.clearEditor();
+        void this.runAction({
+          kind: 'edit',
+          serverId: phase.serverId,
+          expectedRevision: phase.revision,
+          config,
+        });
+      } else {
+        const preview = this.management()?.previewImport(value);
+        if (!preview || preview.status !== 'ready') throw new Error();
+        this.clearEditor();
+        this.phase = { kind: 'confirm_import', preview: preview.preview };
+      }
+      this.notice = undefined;
+    } catch {
+      this.notice = { level: 'error', text: copy(this.input.locale, 'invalid') };
+    }
+    this.input.onChange();
+  }
+
+  private async runAction(action: TuiMcpAction): Promise<void> {
+    const management = this.management();
+    if (!management || this.phase.kind === 'busy') return;
+    if (this.input.canManage && !this.input.canManage()) {
+      this.backToList(false);
+      this.notice = { level: 'error', text: copy(this.input.locale, 'turn_active') };
+      this.input.onChange();
+      return;
+    }
+    this.clearEditor();
+    const attempt = ++this.actionAttempt;
+    this.phase = { kind: 'busy', label: actionLabel(action, this.input.locale) };
+    this.input.onChange();
+    let result: TuiMcpActionResult;
+    try {
+      result = await management.execute(action);
+    } catch {
+      result = { status: 'failed', reason: 'manager-failed' };
+    }
+    if (this.closed || attempt !== this.actionAttempt) return;
+    this.phase = { kind: 'list' };
+    this.notice = actionNotice(result, this.input.locale);
+    this.input.onChange();
+  }
+
+  private document(width: number): string[] {
+    this.serverRows = [];
     const snapshot = this.input.surface?.snapshot();
-    if (!snapshot) {
+    if (!snapshot) return unavailableDocument(this.input.locale);
+    if (this.phase.kind === 'input') return this.inputDocument(width);
+    if (this.phase.kind === 'add_choice') {
       return [
-        ansi.yellow(
-          localized(
-            this.input.locale,
-            '当前 TUI 未连接本地 MCP 控制面。',
-            '目前 TUI 未連線至本機 MCP 控制介面。',
-            'This TUI is not connected to a local MCP control plane.',
-          ),
-        ),
-        localized(
-          this.input.locale,
-          '远程 Runtime Host 的客户端 MCP 工具关联将在后续版本提供。',
-          '遠端 Runtime Host 的用戶端 MCP 工具關聯將於後續版本提供。',
-          'Client MCP tool association for remote Runtime Hosts is planned for a later release.',
-        ),
+        heading(this.input.locale, 'Add MCP server', '添加 MCP 服务器', '新增 MCP 伺服器'),
+        '',
+        'g  Guided setup',
+        'j  Paste JSON',
       ];
     }
-    const lines = [publicationLine(snapshot, this.input.locale)];
-    if (snapshot.initialization === 'loading') {
-      lines.push(
-        localized(
-          this.input.locale,
-          '正在读取 mcp.json 并发现工具…',
-          '正在讀取 mcp.json 並探索工具…',
-          'Loading mcp.json and discovering tools…',
-        ),
-      );
-      return lines;
+    if (this.phase.kind === 'transport') {
+      return [
+        heading(this.input.locale, 'Transport', '传输方式', '傳輸方式'),
+        '',
+        '1  stdio',
+        '2  Streamable HTTP',
+      ];
     }
-    if (snapshot.initialization === 'error') {
-      lines.push(
+    if (this.phase.kind === 'protocol') {
+      return [
+        heading(this.input.locale, 'Protocol preference', '协议偏好', '通訊協定偏好'),
+        '',
+        '1  legacy',
+        '2  auto',
+        '3  2026-07-28',
+      ];
+    }
+    if (this.phase.kind === 'confirm_add') {
+      return confirmAddDocument(this.phase.draft, this.input.locale);
+    }
+    if (this.phase.kind === 'confirm_import') {
+      return confirmImportDocument(this.phase.preview, this.input.locale);
+    }
+    if (this.phase.kind === 'confirm_remove') {
+      return [
         ansi.red(
-          localized(
+          heading(
             this.input.locale,
-            '无法读取或应用 MCP 配置；没有向 Runtime Host 发布工具。',
-            '無法讀取或套用 MCP 設定；未向 Runtime Host 發佈任何工具。',
-            'MCP configuration could not be loaded; no tools were published to the Runtime Host.',
+            `Remove ${this.phase.serverId}?`,
+            `删除 ${this.phase.serverId}？`,
+            `刪除 ${this.phase.serverId}？`,
           ),
         ),
-      );
-      return lines;
+        '',
+        confirmCopy(this.input.locale),
+      ];
     }
-    if (snapshot.servers.length === 0) {
+    if (this.phase.kind === 'busy') return [ansi.yellow(this.phase.label)];
+    const lines = [publicationLine(snapshot, this.input.locale)];
+    if (snapshot.configuration !== 'ready') {
+      lines.push(configurationLine(snapshot.configuration, this.input.locale));
+    }
+    if (this.notice) {
       lines.push(
-        localized(
-          this.input.locale,
-          '尚未配置 MCP 服务器。',
-          '尚未設定 MCP 伺服器。',
-          'No MCP servers are configured.',
-        ),
+        this.notice.level === 'error' ? ansi.red(this.notice.text) : ansi.green(this.notice.text),
       );
-      return lines;
     }
+    if (snapshot.initialization === 'loading') return [...lines, loadingCopy(this.input.locale)];
+    if (snapshot.initialization === 'error') {
+      return [...lines, ansi.red(loadErrorCopy(this.input.locale))];
+    }
+    if (snapshot.servers.length === 0) return [...lines, '', emptyCopy(this.input.locale)];
     lines.push('');
-    for (const server of snapshot.servers) lines.push(...serverLines(server, this.input.locale));
+    this.selected = clamp(this.selected, 0, snapshot.servers.length - 1);
+    snapshot.servers.forEach((server, index) => {
+      const rows = serverLines(server, this.input.locale, index === this.selected);
+      const start = lines.length;
+      lines.push(...rows);
+      this.serverRows.push({ start, end: lines.length - 1 });
+    });
     return lines;
   }
 
-  private scrollBy(delta: number): void {
-    this.scrollTo(this.top + delta);
+  private inputDocument(width: number): string[] {
+    if (this.phase.kind !== 'input' || !this.editor) return [];
+    const label = inputLabel(this.phase.input, this.input.locale);
+    const hint = inputHint(this.phase.input, this.input.locale);
+    return [
+      ansi.bold(label),
+      ...(hint ? [ansi.dim(hint)] : []),
+      '',
+      ...this.editor.render(Math.max(1, width - 2)),
+      ...(this.notice ? [ansi.red(this.notice.text)] : []),
+    ];
   }
 
-  private scrollTo(next: number): void {
-    this.top = clamp(next, 0, this.maxTop());
+  private footer(): string {
+    if (this.phase.kind !== 'list') {
+      return localized(this.input.locale, 'Esc 返回', 'Esc 返回', 'Esc back');
+    }
+    if (!this.management()) {
+      return localized(
+        this.input.locale,
+        '↑/↓ 滚动 · q/Esc 关闭',
+        '↑/↓ 捲動 · q/Esc 關閉',
+        '↑/↓ scroll · q/Esc close',
+      );
+    }
+    return localized(
+      this.input.locale,
+      'a 添加 · Enter 编辑 · Space 启用/停用 · t 测试 · r 重连 · d 删除 · Esc 关闭',
+      'a 新增 · Enter 編輯 · Space 啟用/停用 · t 測試 · r 重新連線 · d 刪除 · Esc 關閉',
+      'a Add · Enter Edit · Space Enable/disable · t Test · r Reconnect · d Remove · Esc Close',
+    );
+  }
+
+  private backToList(clearNotice = true): void {
+    if (this.phase.kind === 'confirm_import') {
+      this.management()?.discardImportPreview(this.phase.preview.previewId);
+    }
+    this.clearEditor();
+    this.phase = { kind: 'list' };
+    if (clearNotice) this.notice = undefined;
     this.input.onChange();
+  }
+
+  private clearEditor(): void {
+    if (!this.editor) return;
+    this.editor.focused = false;
+    this.editor.onSubmit = undefined;
+    this.editor.onChange = undefined;
+    this.editor = undefined;
+  }
+
+  private close(): void {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.phase.kind === 'confirm_import') {
+      this.management()?.discardImportPreview(this.phase.preview.previewId);
+    }
+    this.clearEditor();
+    this.dispose();
+    this.input.onClose();
+  }
+
+  private keepSelectionVisible(): void {
+    const rows = this.serverRows[this.selected];
+    if (!rows || this.bodyRows <= 0) return;
+    if (rows.end - rows.start + 1 > this.bodyRows || rows.start < this.top) {
+      this.top = rows.start;
+    } else if (rows.end >= this.top + this.bodyRows) {
+      this.top = rows.end - this.bodyRows + 1;
+    }
+  }
+
+  private moveSelectionByPage(direction: -1 | 1, serverCount: number): void {
+    if (serverCount === 0) {
+      this.selected = 0;
+      return;
+    }
+    const current = this.serverRows[this.selected];
+    if (!current || this.serverRows.length !== serverCount) {
+      this.selected = clamp(
+        this.selected + direction * Math.max(1, this.bodyRows),
+        0,
+        serverCount - 1,
+      );
+      return;
+    }
+    const targetRow = current.start + direction * Math.max(1, this.bodyRows);
+    const target = this.serverRows.findIndex(
+      (rows) => targetRow >= rows.start && targetRow <= rows.end,
+    );
+    this.selected = target < 0 ? (direction < 0 ? 0 : Math.max(0, serverCount - 1)) : target;
   }
 
   private maxTop(): number {
@@ -172,8 +549,48 @@ export class McpStatusOverlay implements Component {
   }
 }
 
+function normalizeOneServer(serverId: string, source: string): McpServerConfig {
+  const value: unknown = JSON.parse(source);
+  return normalizeMcpConfig({ version: 3, mcpServers: { [serverId]: value } }).mcpServers[serverId];
+}
+
+function guidedConfig(draft: GuidedDraft): McpServerConfig | undefined {
+  if (!draft.transport || !draft.protocol) return undefined;
+  const raw =
+    draft.transport === 'stdio'
+      ? {
+          command: draft.command,
+          args: draft.args,
+          cwd: draft.cwd,
+          env: draft.env,
+          protocol: draft.protocol,
+        }
+      : {
+          url: draft.url,
+          transport: 'auto',
+          headers: draft.headers,
+          protocol: draft.protocol,
+        };
+  return normalizeMcpConfig({ version: 3, mcpServers: { [draft.serverId]: raw } }).mcpServers[
+    draft.serverId
+  ];
+}
+
+function stringArray(source: string): string[] {
+  const value: unknown = JSON.parse(source);
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) throw new Error();
+  return value;
+}
+
+function stringMap(source: string): Record<string, string> {
+  const value: unknown = JSON.parse(source);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
+  if (Object.values(value).some((entry) => typeof entry !== 'string')) throw new Error();
+  return value as Record<string, string>;
+}
+
 function publicationLine(
-  snapshot: ReturnType<TuiMcpSurface['snapshot']>,
+  snapshot: ReturnType<TuiMcpManagement['snapshot']>,
   locale: UiLocale,
 ): string {
   const publication = {
@@ -189,23 +606,38 @@ function publicationLine(
     not_published: localized(locale, '未发布', '未發佈', 'not published'),
     error: localized(locale, '发布失败', '發佈失敗', 'publication failed'),
   }[snapshot.publication];
-  const tools = locale === 'en' ? `${snapshot.toolCount} tools` : `${snapshot.toolCount} 個工具`;
+  const tools = localized(
+    locale,
+    `${snapshot.toolCount} 个工具`,
+    `${snapshot.toolCount} 個工具`,
+    `${snapshot.toolCount} tools`,
+  );
   return `${ansi.bold(publication)} · ${tools}`;
 }
 
-function serverLines(server: TuiMcpServerSnapshot, locale: UiLocale): string[] {
+function serverLines(server: TuiMcpServerSnapshot, locale: UiLocale, selected: boolean): string[] {
   const protocol = server.negotiatedProtocol
     ? `${server.negotiatedProtocol.era} ${server.negotiatedProtocol.revision}`
+    : server.configuredProtocol;
+  const transport = server.transport ?? server.configuredTransport;
+  const tools = localized(
+    locale,
+    `${server.toolCount} 个工具`,
+    `${server.toolCount} 個工具`,
+    `${server.toolCount} tools`,
+  );
+  const sync = !server.synchronized
+    ? localized(locale, '配置待同步', '設定待同步', 'config pending')
     : undefined;
-  const tools = locale === 'en' ? `${server.toolCount} tools` : `${server.toolCount} 個工具`;
-  const details = [stateLabel(server.state, locale), server.transport, protocol, tools]
+  const details = [stateLabel(server.state, locale), transport, protocol, tools, sync]
     .filter(Boolean)
     .join(' · ');
+  const cursor = selected ? ansi.accent('›') : ' ';
   return [
-    `${statusMarker(server.state)} ${ansi.bold(server.serverId)}  ${details}`,
+    `${cursor} ${statusMarker(server.state)} ${ansi.bold(server.serverId)}  ${details}`,
     ...(server.error
       ? [
-          `  ${ansi.red(
+          `    ${ansi.red(
             generalizedErrorMessageForLocale(
               new Error(server.error),
               localized(locale, 'MCP 服务器连接失败', 'MCP 伺服器連線失敗', server.error),
@@ -217,6 +649,231 @@ function serverLines(server: TuiMcpServerSnapshot, locale: UiLocale): string[] {
   ];
 }
 
+function actionNotice(
+  result: TuiMcpActionResult,
+  locale: UiLocale,
+): { level: 'info' | 'error'; text: string } {
+  if (result.status === 'conflict') return { level: 'error', text: copy(locale, result.reason) };
+  if (result.status === 'failed') return { level: 'error', text: copy(locale, result.reason) };
+  if (result.status === 'tested') {
+    if (result.test.ok && result.effect === 'publication_failed') {
+      return { level: 'error', text: copy(locale, 'test_publication_failed') };
+    }
+    if (result.test.ok && result.effect === 'pending_host') {
+      return { level: 'info', text: copy(locale, 'test_pending_host') };
+    }
+    return {
+      level: result.test.ok ? 'info' : 'error',
+      text: result.test.ok ? copy(locale, 'test_ok') : copy(locale, 'test_failed'),
+    };
+  }
+  return {
+    level:
+      result.effect === 'sync_failed' || result.effect === 'publication_failed' ? 'error' : 'info',
+    text: copy(locale, result.effect),
+  };
+}
+
+function copy(locale: UiLocale, key: string): string {
+  const en: Record<string, string> = {
+    exists: 'That server ID already exists.',
+    stale_config: 'MCP configuration changed; retry the action.',
+    stale_edit: 'This server changed; reopen it before editing.',
+    stale_import: 'An imported entry changed; preview the import again.',
+    missing: 'That server no longer exists.',
+    closed: 'The MCP controller is closed.',
+    'invalid-config': 'The server configuration is invalid.',
+    'credential-cleanup-failed':
+      'Stored credentials could not be removed; the configuration was not changed.',
+    'persist-failed': 'The configuration could not be saved.',
+    'manager-failed': 'The MCP connection action failed.',
+    turn_active: 'MCP cannot be changed while a turn or another control action is running.',
+    invalid: 'Check the value and try again.',
+    published: 'Configuration saved and tools refreshed.',
+    pending_host: 'Configuration saved; publication is waiting for Runtime Host.',
+    sync_failed: 'Configuration saved, but the MCP manager is out of sync.',
+    publication_failed: 'Configuration saved, but capability publication failed.',
+    test_ok: 'Connection test passed.',
+    test_failed: 'Connection test failed.',
+    test_publication_failed: 'Connection test passed, but capability publication failed.',
+    test_pending_host: 'Connection test passed; publication is waiting for Runtime Host.',
+  };
+  const zh: Record<string, string> = {
+    exists: '该服务器 ID 已存在。',
+    stale_config: 'MCP 配置已变化，请重试。',
+    stale_edit: '该服务器已变化，请重新打开后编辑。',
+    stale_import: '导入项已变化，请重新预览。',
+    missing: '该服务器已不存在。',
+    closed: 'MCP 控制器已关闭。',
+    'invalid-config': '服务器配置无效。',
+    'credential-cleanup-failed': '无法删除旧凭据，配置未修改。',
+    'persist-failed': '无法保存配置。',
+    'manager-failed': 'MCP 连接操作失败。',
+    turn_active: 'Turn 或其他控制操作运行期间不能修改 MCP。',
+    invalid: '请检查输入后重试。',
+    published: '配置已保存，工具已刷新。',
+    pending_host: '配置已保存，正等待 Runtime Host 发布。',
+    sync_failed: '配置已保存，但 MCP Manager 尚未同步。',
+    publication_failed: '配置已保存，但 capability 发布失败。',
+    test_ok: '连接测试通过。',
+    test_failed: '连接测试失败。',
+    test_publication_failed: '连接测试通过，但 capability 发布失败。',
+    test_pending_host: '连接测试通过，正等待 Runtime Host 发布。',
+  };
+  const zhTw: Record<string, string> = {
+    exists: '該伺服器 ID 已存在。',
+    stale_config: 'MCP 設定已變更，請重試。',
+    stale_edit: '該伺服器已變更，請重新開啟後編輯。',
+    stale_import: '匯入項目已變更，請重新預覽。',
+    missing: '該伺服器已不存在。',
+    closed: 'MCP 控制器已關閉。',
+    'invalid-config': '伺服器設定無效。',
+    'credential-cleanup-failed': '無法刪除舊憑證，設定未修改。',
+    'persist-failed': '無法儲存設定。',
+    'manager-failed': 'MCP 連線操作失敗。',
+    turn_active: 'Turn 或其他控制操作執行期間無法修改 MCP。',
+    invalid: '請檢查輸入後重試。',
+    published: '設定已儲存，工具已重新整理。',
+    pending_host: '設定已儲存，正等待 Runtime Host 發佈。',
+    sync_failed: '設定已儲存，但 MCP Manager 尚未同步。',
+    publication_failed: '設定已儲存，但 capability 發佈失敗。',
+    test_ok: '連線測試通過。',
+    test_failed: '連線測試失敗。',
+    test_publication_failed: '連線測試通過，但 capability 發佈失敗。',
+    test_pending_host: '連線測試通過，正等待 Runtime Host 發佈。',
+  };
+  const catalog = locale === 'zh-CN' ? zh : locale === 'zh-TW' ? zhTw : en;
+  return catalog[key] ?? key;
+}
+
+function confirmAddDocument(draft: GuidedDraft, locale: UiLocale): string[] {
+  return [
+    heading(locale, 'Add this MCP server?', '添加该 MCP 服务器？', '新增這個 MCP 伺服器？'),
+    '',
+    `${draft.serverId} · ${draft.transport} · ${draft.protocol}`,
+    draft.transport === 'stdio' ? (draft.command ?? '') : (draft.url ?? ''),
+    '',
+    confirmCopy(locale),
+  ];
+}
+
+function confirmImportDocument(preview: TuiMcpImportPreview, locale: UiLocale): string[] {
+  return [
+    heading(locale, 'Import MCP servers?', '导入 MCP 服务器？', '匯入 MCP 伺服器？'),
+    '',
+    ...preview.entries.map(
+      (entry) =>
+        `${entry.change === 'add' ? '+' : '~'} ${entry.serverId} · ${entry.transport} · ${entry.protocol}`,
+    ),
+    '',
+    confirmCopy(locale),
+  ];
+}
+
+function actionLabel(action: TuiMcpAction, locale: UiLocale): string {
+  if (locale === 'zh-CN') return '正在应用 MCP 更改…';
+  if (locale === 'zh-TW') return '正在套用 MCP 變更…';
+  if (action.kind === 'test') return 'Testing MCP server…';
+  if (action.kind === 'reconnect') return 'Reconnecting MCP server…';
+  return 'Applying MCP configuration…';
+}
+
+function inputLabel(kind: InputKind, locale: UiLocale): string {
+  const labels: Record<InputKind, [string, string, string]> = {
+    server_id: ['Server ID', '服务器 ID', '伺服器 ID'],
+    command: ['Command', '命令', '命令'],
+    args: ['Arguments', '参数', '參數'],
+    url: ['Streamable HTTP URL', 'Streamable HTTP URL', 'Streamable HTTP URL'],
+    cwd: ['Working directory', '工作目录', '工作目錄'],
+    env: ['Environment', '环境变量', '環境變數'],
+    headers: ['Request headers', '请求头', '請求標頭'],
+    edit: ['Edit server JSON', '编辑服务器 JSON', '編輯伺服器 JSON'],
+    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],
+  };
+  return labels[kind][locale === 'zh-CN' ? 1 : locale === 'zh-TW' ? 2 : 0];
+}
+
+function inputHint(kind: InputKind, locale: UiLocale): string {
+  const optional = localized(locale, '可留空', '可留空', 'optional');
+  if (kind === 'args') return `JSON string array, ${optional}`;
+  if (kind === 'env' || kind === 'headers') return `JSON string map, ${optional}`;
+  if (kind === 'cwd') return optional;
+  return localized(
+    locale,
+    'Enter 提交 · Esc 返回',
+    'Enter 送出 · Esc 返回',
+    'Enter submit · Esc back',
+  );
+}
+
+function configurationLine(state: 'synchronizing' | 'out_of_sync', locale: UiLocale): string {
+  if (state === 'synchronizing') {
+    return localized(locale, '配置同步中…', '設定同步中…', 'Configuration is synchronizing…');
+  }
+  return ansi.red(
+    localized(
+      locale,
+      '持久化配置与 MCP Manager 尚未同步。',
+      '持久化設定與 MCP Manager 尚未同步。',
+      'Durable configuration and MCP Manager are out of sync.',
+    ),
+  );
+}
+
+function unavailableDocument(locale: UiLocale): string[] {
+  return [
+    ansi.yellow(
+      localized(
+        locale,
+        '当前 TUI 未连接本地 MCP 控制面。',
+        '目前 TUI 未連線至本機 MCP 控制介面。',
+        'This TUI is not connected to a local MCP control plane.',
+      ),
+    ),
+    localized(
+      locale,
+      '远程 Runtime Host 的客户端 MCP 工具关联将在后续版本提供。',
+      '遠端 Runtime Host 的用戶端 MCP 工具關聯將於後續版本提供。',
+      'Client MCP tool association for remote Runtime Hosts is planned for a later release.',
+    ),
+  ];
+}
+
+function heading(locale: UiLocale, en: string, zh: string, zhTw: string): string {
+  return ansi.bold(localized(locale, zh, zhTw, en));
+}
+
+function confirmCopy(locale: UiLocale): string {
+  return localized(locale, 'y 确认 · Esc 取消', 'y 確認 · Esc 取消', 'y Confirm · Esc cancel');
+}
+
+function loadingCopy(locale: UiLocale): string {
+  return localized(
+    locale,
+    '正在读取 mcp.json 并发现工具…',
+    '正在讀取 mcp.json 並探索工具…',
+    'Loading mcp.json and discovering tools…',
+  );
+}
+
+function loadErrorCopy(locale: UiLocale): string {
+  return localized(
+    locale,
+    '无法读取或应用 MCP 配置；没有向 Runtime Host 发布工具。',
+    '無法讀取或套用 MCP 設定；未向 Runtime Host 發佈任何工具。',
+    'MCP configuration could not be loaded; no tools were published to the Runtime Host.',
+  );
+}
+
+function emptyCopy(locale: UiLocale): string {
+  return localized(
+    locale,
+    '尚未配置 MCP 服务器。按 a 添加。',
+    '尚未設定 MCP 伺服器。按 a 新增。',
+    'No MCP servers are configured. Press a to add one.',
+  );
+}
+
 function statusMarker(state: TuiMcpServerSnapshot['state']): string {
   if (state === 'connected') return ansi.green('●');
   if (state === 'connecting') return ansi.yellow('●');
@@ -225,6 +882,7 @@ function statusMarker(state: TuiMcpServerSnapshot['state']): string {
 }
 
 function stateLabel(state: TuiMcpServerSnapshot['state'], locale: UiLocale): string {
+  if (!state) return localized(locale, '仅已配置', '僅已設定', 'configured only');
   if (locale === 'en') return state;
   const simplified = {
     disabled: '已停用',

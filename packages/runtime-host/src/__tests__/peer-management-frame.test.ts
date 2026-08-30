@@ -28,6 +28,7 @@ test('peer management frames preserve a bounded machine-readable descriptor', ()
   const frame = {
     kind: 'result' as const,
     action: 'enable' as const,
+    restarted: true,
     status: {
       state: 'enabled' as const,
       serviceState: 'running',
@@ -35,6 +36,7 @@ test('peer management frames preserve a bounded machine-readable descriptor', ()
       rootId: 'a'.repeat(64),
       routeHints: ['/ip4/192.0.2.1/udp/41000/quic-v1'],
       coordinationRelays: [],
+      automaticRelayDiscovery: true,
     },
   };
   assert.deepEqual(
