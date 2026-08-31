@@ -17,7 +17,10 @@
  * under the License.
  */
 
-export { RuntimeHostPeerMeshDialog } from './ui/runtime-host-peer-mesh-dialog';
+export {
+  getRuntimeHostPeerMeshCopy,
+  RuntimeHostPeerMeshDialog,
+} from './ui/runtime-host-peer-mesh-dialog';
 export { PeerMeshPeerIdButton } from './ui/peer-mesh-peer-id-button';
 export {
   RuntimeHostPairingRecoveryButton,

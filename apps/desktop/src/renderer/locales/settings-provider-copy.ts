@@ -341,8 +341,8 @@ const zhTwCopy = {
     categories: { oauth: 'OAuth', domestic: '國內', overseas: '海外', local: '本地', custom: 'Custom' },
     connectionStatuses: { retired: '已停用 · 請刪除', reauth: '需要重新登入', disabledFailed: '暫不可用 · 上次連線失敗', disabled: '暫不可用', failed: '上次連線失敗' },
     lastTest: {
-      '连接已验证': '連線已驗證', '鉴权失败': '鑑權失敗', '请求超时': '請求超時', '网络错误': '網路錯誤', '模型服务返回错误': '模型服務返回錯誤', '连接测试失败': '連線測試失敗',
-      'connection verified': '連線已驗證', 'authentication failed': '鑑權失敗', 'request timed out': '請求超時', 'network error': '網路錯誤', 'provider returned an error': '模型服務返回錯誤', 'connection test failed': '連線測試失敗',
+      '连接已验证': '連線已驗證', '鉴权失败': '鑑權失敗', '请求超时': '請求超時', '网络错误': '網路錯誤', '模型服务返回错误': '模型服務回傳錯誤', '连接测试失败': '連線測試失敗',
+      'connection verified': '連線已驗證', 'authentication failed': '鑑權失敗', 'request timed out': '請求超時', 'network error': '網路錯誤', 'provider returned an error': '模型服務回傳錯誤', 'connection test failed': '連線測試失敗',
       'claude oauth 未登录。': 'Claude OAuth 未登入。', 'claude oauth 本地凭据读取失败。': 'Claude OAuth 本地憑據讀取失敗。', 'claude oauth 需要重新登录。': 'Claude OAuth 需要重新登入。', 'claude oauth 已登录。': 'Claude OAuth 已登入。', 'claude oauth 已退出登录。': 'Claude OAuth 已退出登入。',
       'codex oauth 未登录。': 'Codex OAuth 未登入。', 'codex oauth 本地凭据读取失败。': 'Codex OAuth 本地憑據讀取失敗。', 'codex oauth 需要重新登录。': 'Codex OAuth 需要重新登入。', 'codex oauth 已登录。': 'Codex OAuth 已登入。', 'codex oauth 已退出登录。': 'Codex OAuth 已退出登入。',
       '当前账号无可用 codex 模型。': '目前帳號無可用 Codex 模型。', 'codex 模型列表获取失败。': 'Codex 模型列表取得失敗。',

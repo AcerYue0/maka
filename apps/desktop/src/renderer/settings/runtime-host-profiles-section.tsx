@@ -58,6 +58,7 @@ import {
 import { RuntimeHostConnectionCodeDialog } from './runtime-host-connection-code-dialog.js';
 import {
   PeerMeshPeerIdButton,
+  getRuntimeHostPeerMeshCopy,
   RuntimeHostPairingRecoveryButton,
   RuntimeHostPeerMeshDialog,
   RuntimeHostProfileMoreMenu,
@@ -89,6 +90,7 @@ export function RuntimeHostProfilesSection(props: {
 }) {
   const locale = useUiLocale();
   const copy = getSettingsProjectsCopy(locale).runtimeHost;
+  const peerMeshCopy = getRuntimeHostPeerMeshCopy(locale);
   const pairingActionCopy: RuntimeHostPairingActionCopy = {
     retry: copy.resolvePairingRecovery,
     retryFailed: copy.resolvePairingRecoveryFailed,
@@ -657,11 +659,9 @@ export function RuntimeHostProfilesSection(props: {
                               <PeerMeshPeerIdButton
                                 peerId={profile.transport.peerId}
                                 displayValue={abbreviatePeerId(profile.transport.peerId)}
-                                copyLabel={locale.startsWith('zh')
-                                  ? `复制完整 Peer ID：${profile.transport.peerId}`
-                                  : `Copy full Peer ID: ${profile.transport.peerId}`}
-                                copiedTitle={locale.startsWith('zh') ? 'Peer ID 已复制' : 'Peer ID copied'}
-                                failedTitle={locale.startsWith('zh') ? '无法复制 Peer ID' : 'Could not copy Peer ID'}
+                                copyLabel={peerMeshCopy.copyPeerId(profile.transport.peerId)}
+                                copiedTitle={peerMeshCopy.peerIdCopied}
+                                failedTitle={peerMeshCopy.peerIdCopyFailed}
                                 errorMessage={(error) => settingsActionErrorMessage(error, locale)}
                                 className="settingsRuntimeHostPeerId"
                               />
