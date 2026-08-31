@@ -161,7 +161,7 @@ const DAILY_REVIEW_COPY = {
       todayTitle: '等待記錄今天活動', rangeTitle: (label) => `${label}無活動`, todayBody: '今天還沒有發起任務，也沒有呼叫模型。', rangeBody: (label) => `${label}範圍內沒有發起任務，也沒有呼叫模型。`,
     },
     export: {
-      ariaLabel: '回顧匯出操作', copyTitle: '複製為 Markdown 摘要，方便分享 / 貼到筆記', copying: '複製中…', copy: '複製', appendTitle: '追加到目前輸入框草稿', appending: '追加中…', append: '粘到輸入框', saveTitle: '儲存為 Markdown 檔案', saving: '儲存中…', save: '儲存',
+      ariaLabel: '回顧匯出操作', copyTitle: '複製為 Markdown 摘要，方便分享 / 貼到筆記', copying: '複製中…', copy: '複製', appendTitle: '追加到目前輸入框草稿', appending: '追加中…', append: '貼到輸入框', saveTitle: '儲存為 Markdown 檔案', saving: '儲存中…', save: '儲存',
     },
     page: {
       title: '每日回顧', generateAnalysis: '生成分析', retryAnalysis: '重新生成', viewAnalysis: '檢視分析', backToActivity: '返回活動', timeRange: '時間範圍', rangeOptions: [['1', '今日'], ['7', '最近 7 天'], ['30', '最近 30 天']], rangeSwitch: '時間範圍切換',

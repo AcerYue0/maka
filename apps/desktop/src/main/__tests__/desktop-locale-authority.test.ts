@@ -105,6 +105,24 @@ test('falls back to its current projection when settings cannot be read', async 
   assert.equal(await authority.resolve(), 'zh-CN');
 });
 
+test('resolves a delayed persisted preference before startup native copy is selected', async () => {
+  let release!: (settings: ReturnType<typeof createDefaultSettings>) => void;
+  const pending = new Promise<ReturnType<typeof createDefaultSettings>>((resolve) => {
+    release = resolve;
+  });
+  const authority = createDesktopLocaleAuthority({
+    readSettings: () => pending,
+    preferredSystemLanguages: () => ['en-US'],
+  });
+
+  const startupLocale = authority.resolve();
+  release(mergeSettings(createDefaultSettings(), {
+    personalization: { uiLocale: 'zh-TW' },
+  }));
+
+  assert.equal(await startupLocale, 'zh-TW');
+});
+
 test('never projects the legacy zh preference into native copy lookups', async () => {
   const legacy = mergeSettings(createDefaultSettings(), {
     personalization: { uiLocale: 'zh-CN' },

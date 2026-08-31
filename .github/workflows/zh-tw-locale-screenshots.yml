@@ -33,5 +33,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zh-tw-locale-screenshots
-          path: apps/desktop/test-results/**/zh-tw-locale/*.png
-          if-no-files-found: warn
+          path: apps/desktop/e2e/test-results/**/zh-tw-locale/*.png
+          if-no-files-found: error

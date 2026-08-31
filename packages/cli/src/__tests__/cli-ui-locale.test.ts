@@ -77,6 +77,17 @@ describe('CLI TUI locale authority', () => {
     assert.deepEqual(resolveCliUiLocale({}), { ok: true, locale: 'en' });
   });
 
+  test('treats empty and whitespace-only MAKA_LOCALE as auto', () => {
+    assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: '', LANG: 'zh_TW.UTF-8' }), {
+      ok: true,
+      locale: 'zh-TW',
+    });
+    assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: '  \t ', LANG: 'zh_CN.UTF-8' }), {
+      ok: true,
+      locale: 'zh-CN',
+    });
+  });
+
   test('rejects an unsupported explicit preference with a configuration error', () => {
     assert.deepEqual(resolveCliUiLocale({ MAKA_LOCALE: 'fr' }), {
       ok: false,

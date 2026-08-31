@@ -33,13 +33,13 @@ export type CliUiLocaleResolution =
 /** Resolve the interactive TUI locale without changing the top-level CLI grammar. */
 export function resolveCliUiLocale(environment: CliEnvironment): CliUiLocaleResolution {
   const rawPreference = environment.MAKA_LOCALE?.trim();
-  const normalizedPreference = rawPreference?.replaceAll('_', '-').toLowerCase();
+  const normalizedPreference = rawPreference?.replaceAll('_', '-').toLowerCase() || 'auto';
   const preference =
     normalizedPreference === 'zh' || normalizedPreference === 'zh-cn'
       ? 'zh-CN'
       : normalizedPreference === 'zh-tw'
         ? 'zh-TW'
-        : (normalizedPreference ?? 'auto');
+        : normalizedPreference;
   if (!isUiLocalePreference(preference)) {
     return {
       ok: false,

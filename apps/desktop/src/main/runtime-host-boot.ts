@@ -408,7 +408,7 @@ const mainWindowController = createMainWindowController({
       details: `Exit code: ${details.exitCode}`,
     });
     const decision = await showMainRendererProcessGoneDialog({
-      locale: desktopLocale.current(),
+      locale: await desktopLocale.resolve(),
       copyDiagnostics: () =>
         copyDesktopDiagnosticReport(desktopDiagnostics, diagnosticInput),
       showMessageBox: (options) => dialog.showMessageBox(options),
