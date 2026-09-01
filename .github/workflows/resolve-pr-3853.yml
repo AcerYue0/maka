@@ -37,7 +37,6 @@ jobs:
           echo "feature_sha=${feature_sha}"
           echo "base_sha=${base_sha}"
 
-          # The PR's existing review-driven commits must remain untouched.
           git checkout -B resolve-pr-3853 "${feature_sha}"
           set +e
           git merge --no-ff upstream/main -m "Merge apache/main into feat/zh-tw-locale"
@@ -47,7 +46,6 @@ jobs:
           if [[ ${merge_status} -ne 0 ]]; then
             mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
             printf 'Current conflicts:\n%s\n' "${conflicts[*]}"
-
             expected=(
               'apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts'
               'apps/desktop/src/renderer/locales/conversation-copy.ts'
@@ -61,8 +59,6 @@ jobs:
               exit 2
             fi
 
-            # Upstream replaced use-session-tasks.ts with use-session-todo.ts.
-            # Keep the upstream refactor and port this PR's locale-aware fallback.
             git rm apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts
             python <<'PY'
           from pathlib import Path
@@ -80,9 +76,6 @@ jobs:
           PY
             git add apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts
 
-            # The OAuth flow was substantially redesigned upstream. Preserve the
-            # new connection-identity architecture; its copy already flows through
-            # useUiLocale/getProviderSettingsCopy in the merged i18n tree.
             git checkout --theirs -- apps/desktop/src/renderer/settings/provider-oauth-section.tsx
             git add apps/desktop/src/renderer/settings/provider-oauth-section.tsx
 
@@ -114,19 +107,13 @@ jobs:
               return text
 
           def locale_section(text: str, key: str, next_key: str) -> tuple[int, int, str]:
-              start_token = f"  '{key}': {{"
-              start = text.index(start_token)
-              if next_key == 'en':
-                  end = text.index('  en: {', start)
-              else:
-                  end = text.index(f"  '{next_key}': {{", start)
+              start = text.index(f"  '{key}': {{")
+              end = text.index('  en: {' if next_key == 'en' else f"  '{next_key}': {{", start)
               return start, end, text[start:end]
 
           def replace_section(text: str, start: int, end: int, section: str) -> str:
               return text[:start] + section + text[end:]
 
-          # Desktop conversation catalog: retain zh-CN/zh-TW split, while adding
-          # fields introduced on upstream's former single zh catalog.
           desktop_path = Path('apps/desktop/src/renderer/locales/conversation-copy.ts')
           desktop = choose_ours(str(desktop_path))
           for locale, nxt, title, detail, todo in [
@@ -135,55 +122,27 @@ jobs:
           ]:
               start, end, sec = locale_section(desktop, locale, nxt)
               if 'imageAttachmentNotDirectTitle:' not in sec:
-                  sec, count = re.subn(
-                      r"(attachmentFailedTitle:\s*'[^']*',)",
-                      rf"\1 imageAttachmentNotDirectTitle: '{title}', imageAttachmentNotDirectDescription: '{detail}',",
-                      sec,
-                      count=1,
-                  )
+                  sec, count = re.subn(r"(attachmentFailedTitle:\s*'[^']*',)", rf"\1 imageAttachmentNotDirectTitle: '{title}', imageAttachmentNotDirectDescription: '{detail}',", sec, count=1)
                   if count != 1: raise SystemExit(f'Could not add image attachment copy for {locale}')
               if 'todoLoadFailed:' not in sec:
-                  sec, count = re.subn(
-                      r"(\n\s*tasks:\s*'[^']*',)",
-                      rf"\1\n      todoLoadFailed: '{todo}',",
-                      sec,
-                      count=1,
-                  )
+                  sec, count = re.subn(r"(\n\s*tasks:\s*'[^']*',)", rf"\1\n      todoLoadFailed: '{todo}',", sec, count=1)
                   if count != 1: raise SystemExit(f'Could not add todo load copy for {locale}')
               desktop = replace_section(desktop, start, end, sec)
           desktop_path.write_text(desktop)
 
-          # Providers panel: keep upstream's stable connection identity type and
-          # this PR's expanded locale union.
           panel_path = Path('apps/desktop/src/renderer/settings/providers-panel.tsx')
-          panel = panel_path.read_text()
-          pattern = re.compile(
-              r"<<<<<<< ours\n"
-              r"function connectionSubtitle\(connection: LlmConnection, locale: 'zh-CN' \| 'zh-TW' \| 'en'\): string \{\n"
-              r"=======\n"
-              r"function connectionSubtitle\(connection: IdentifiedLlmConnection, locale: 'zh' \| 'en'\): string \{\n"
-              r">>>>>>> theirs\n"
-          )
-          panel, count = pattern.subn(
-              "function connectionSubtitle(connection: IdentifiedLlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {\n",
-              panel,
-              count=1,
-          )
-          if count != 1: raise SystemExit('Unexpected providers-panel conflict shape')
-          panel_path.write_text(panel)
+          panel = choose_ours(str(panel_path))
+          old = "function connectionSubtitle(connection: LlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {"
+          new = "function connectionSubtitle(connection: IdentifiedLlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {"
+          if old not in panel: raise SystemExit('Could not locate providers-panel subtitle signature')
+          panel_path.write_text(panel.replace(old, new, 1))
 
-          # CLI MCP overlay: keep upstream publication-credential feature and add
-          # the zh-TW labels/hints introduced by this PR.
           cli_path = Path('packages/cli/src/pi-tui-mcp-status.ts')
           cli = choose_ours(str(cli_path))
           if "publication_credential: ['Provider credential'" not in cli:
               anchor = "    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],\n"
               if anchor not in cli: raise SystemExit('Could not locate MCP input labels')
-              cli = cli.replace(
-                  anchor,
-                  anchor + "    publication_credential: ['Provider credential', 'Provider 凭据', 'Provider 憑證'],\n",
-                  1,
-              )
+              cli = cli.replace(anchor, anchor + "    publication_credential: ['Provider credential', 'Provider 凭据', 'Provider 憑證'],\n", 1)
           hint_anchor = "  if (kind === 'cwd') return optional;\n"
           if "if (kind === 'publication_credential')" not in cli:
               if hint_anchor not in cli: raise SystemExit('Could not locate MCP input hint')
@@ -201,8 +160,6 @@ jobs:
               )
           cli_path.write_text(cli)
 
-          # Shared UI conversation copy: retain the split locale catalog and fold
-          # in upstream's new edit/resend constraints for both Chinese locales.
           ui_path = Path('packages/ui/src/conversation-copy.ts')
           ui = choose_ours(str(ui_path))
           for locale, nxt, transformed, directory in [
@@ -210,21 +167,12 @@ jobs:
               ('zh-TW', 'en', '包含已展開上下文的歷史訊息暫不支援編輯並重發', '包含資料夾引用的歷史訊息暫不支援編輯並重發'),
           ]:
               start, end, sec = locale_section(ui, locale, nxt)
-              sec, count = re.subn(
-                  r"editMessageDisabledTransformedText:\s*'[^']*'",
-                  f"editMessageDisabledTransformedText: '{transformed}'",
-                  sec,
-                  count=1,
-              )
+              sec, count = re.subn(r"editMessageDisabledTransformedText:\s*'[^']*'", f"editMessageDisabledTransformedText: '{transformed}'", sec, count=1)
               if count != 1: raise SystemExit(f'Could not update transformed-text copy for {locale}')
               if 'editMessageDisabledDirectoryReferences:' not in sec:
                   needle = f"editMessageDisabledTransformedText: '{transformed}',"
                   if needle not in sec: raise SystemExit(f'Could not add directory-reference copy for {locale}')
-                  sec = sec.replace(
-                      needle,
-                      needle + f" editMessageDisabledDirectoryReferences: '{directory}',",
-                      1,
-                  )
+                  sec = sec.replace(needle, needle + f" editMessageDisabledDirectoryReferences: '{directory}',", 1)
               ui = replace_section(ui, start, end, sec)
           ui_path.write_text(ui)
           PY
@@ -243,11 +191,8 @@ jobs:
             git commit --no-edit
           fi
 
-          # Guard against any accidental history rewrite: the restored feature
-          # head must be an ancestor of the result.
           git merge-base --is-ancestor "${feature_sha}" HEAD
           git diff --check "${base_sha}"...HEAD
-
           echo "resolved_sha=$(git rev-parse HEAD)"
 
       - name: Install dependencies
