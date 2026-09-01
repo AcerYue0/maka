@@ -6,79 +6,70 @@ on:
       - backup/feat-zh-tw-locale-before-conflict-resolution
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  resolve:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.18.1
-          cache: npm
-
-      - name: Merge latest upstream main without rewriting PR commits
+      - name: Print exact merge conflict hunks
         shell: bash
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -uo pipefail
           git remote add upstream https://github.com/apache/maka.git 2>/dev/null || git remote set-url upstream https://github.com/apache/maka.git
           git fetch --no-tags upstream main
           git fetch --no-tags origin feat/zh-tw-locale
+          git checkout -B resolve-pr-3853 origin/feat/zh-tw-locale
 
-          feature_sha="$(git rev-parse origin/feat/zh-tw-locale)"
-          base_sha="$(git rev-parse upstream/main)"
-          echo "feature_sha=${feature_sha}"
-          echo "base_sha=${base_sha}"
-
-          git checkout -B resolve-pr-3853 "${feature_sha}"
           set +e
           git merge --no-ff upstream/main -m "Merge apache/main into feat/zh-tw-locale"
-          merge_status=$?
+          status=$?
           set -e
-
-          if [[ ${merge_status} -ne 0 ]]; then
-            conflict_path='apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts'
-            replacement_path='apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts'
-            conflicts="$(git diff --name-only --diff-filter=U)"
-            if [[ "${conflicts}" != "${conflict_path}" ]]; then
-              echo "Unexpected conflicts:"
-              printf '%s\n' "${conflicts}"
-              exit 2
-            fi
-
-            # Upstream replaced use-session-tasks.ts with use-session-todo.ts.
-            # Preserve that refactor and port this PR's locale-aware error fallback.
-            git rm "${conflict_path}"
-            python <<'PY'
-          from pathlib import Path
-
-          path = Path('apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts')
-          text = path.read_text()
-          old_import = "import { generalizedErrorMessage, generalizedErrorMessageChinese } from '@maka/core/redaction';"
-          new_import = "import { generalizedErrorMessageForLocale } from '@maka/core/redaction';"
-          old_error = """          error:\n            copy.locale === 'zh'\n              ? generalizedErrorMessageChinese(error, copy.loadFailed)\n              : generalizedErrorMessage(error, copy.loadFailed),"""
-          new_error = """          error: generalizedErrorMessageForLocale(error, copy.loadFailed, copy.locale),"""
-          if old_import not in text or old_error not in text:
-              raise SystemExit('Expected upstream todo locale fallback was not found')
-          path.write_text(text.replace(old_import, new_import).replace(old_error, new_error))
-          PY
-            git add "${replacement_path}"
-            git commit --no-edit
+          if [[ ${status} -eq 0 ]]; then
+            echo 'No conflicts.'
+            exit 0
           fi
 
-          git diff --check "${base_sha}"...HEAD
-          npm ci
-          npm run typecheck
-          npm run format:check
+          echo '=== CONFLICT PATHS ==='
+          git diff --name-only --diff-filter=U
+          echo '=== CONFLICT HUNKS ==='
+          while IFS= read -r file; do
+            echo
+            echo "===== ${file} ====="
+            if git ls-files -u -- "${file}" | grep -q .; then
+              git checkout --conflict=merge -- "${file}" 2>/dev/null || true
+            fi
+            python - "${file}" <<'PY'
+          from pathlib import Path
+          import sys
 
-          resolved_sha="$(git rev-parse HEAD)"
-          echo "resolved_sha=${resolved_sha}"
-          git merge-base --is-ancestor "${feature_sha}" "${resolved_sha}"
-          git push origin HEAD:refs/heads/feat/zh-tw-locale
+          path = Path(sys.argv[1])
+          if not path.exists():
+              print('[deleted in working tree]')
+              raise SystemExit
+          lines = path.read_text(errors='replace').splitlines()
+          markers = [i for i, line in enumerate(lines) if line.startswith('<<<<<<<')]
+          if not markers:
+              print('[no text conflict markers; showing staged variants]')
+          else:
+              shown = set()
+              for marker in markers:
+                  start = max(0, marker - 12)
+                  end = min(len(lines), marker + 45)
+                  for i in range(start, end):
+                      if i not in shown:
+                          print(f'{i+1:5}: {lines[i]}')
+                          shown.add(i)
+                  print('-----')
+          PY
+            echo '--- stage 2 (feature/ours) ---'
+            git show ":2:${file}" 2>/dev/null | sed -n '1,220p' || true
+            echo '--- stage 3 (upstream/theirs) ---'
+            git show ":3:${file}" 2>/dev/null | sed -n '1,220p' || true
+          done < <(git diff --name-only --diff-filter=U)
+
+          exit 1
