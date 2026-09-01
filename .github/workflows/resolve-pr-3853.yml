@@ -59,6 +59,8 @@ jobs:
               exit 2
             fi
 
+            # Upstream replaced the tasks hook with the todo hook. Keep the refactor
+            # and port the locale-aware redaction fallback from this PR.
             git rm apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts
             python <<'PY'
           from pathlib import Path
@@ -76,8 +78,13 @@ jobs:
           PY
             git add apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts
 
+            # Upstream redesigned OAuth around identified connections. Preserve it.
             git checkout --theirs -- apps/desktop/src/renderer/settings/provider-oauth-section.tsx
             git add apps/desktop/src/renderer/settings/provider-oauth-section.tsx
+
+            # The MCP TUI was also substantially redesigned upstream. Start with the
+            # current upstream implementation, then reapply this PR's zh-TW/i18n diff.
+            git checkout --theirs -- packages/cli/src/pi-tui-mcp-status.ts
 
             python <<'PY'
           from pathlib import Path
@@ -114,6 +121,13 @@ jobs:
           def replace_section(text: str, start: int, end: int, section: str) -> str:
               return text[:start] + section + text[end:]
 
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one {label}; found {text.count(old)}')
+              return text.replace(old, new, 1)
+
+          # Desktop conversation catalog: preserve the split locale catalogs and
+          # fold in fields introduced by upstream.
           desktop_path = Path('apps/desktop/src/renderer/locales/conversation-copy.ts')
           desktop = choose_ours(str(desktop_path))
           for locale, nxt, title, detail, todo in [
@@ -130,6 +144,8 @@ jobs:
               desktop = replace_section(desktop, start, end, sec)
           desktop_path.write_text(desktop)
 
+          # Providers panel: combine upstream's identified connection type with
+          # this PR's three-locale union.
           panel_path = Path('apps/desktop/src/renderer/settings/providers-panel.tsx')
           panel = choose_ours(str(panel_path))
           old = "function connectionSubtitle(connection: LlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {"
@@ -137,29 +153,106 @@ jobs:
           if old not in panel: raise SystemExit('Could not locate providers-panel subtitle signature')
           panel_path.write_text(panel.replace(old, new, 1))
 
+          # CLI: latest upstream is authoritative for behavior; reapply the exact
+          # i18n intent of this PR on top of that implementation.
           cli_path = Path('packages/cli/src/pi-tui-mcp-status.ts')
-          cli = choose_ours(str(cli_path))
-          if "publication_credential: ['Provider credential'" not in cli:
-              anchor = "    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],\n"
-              if anchor not in cli: raise SystemExit('Could not locate MCP input labels')
-              cli = cli.replace(anchor, anchor + "    publication_credential: ['Provider credential', 'Provider 凭据', 'Provider 憑證'],\n", 1)
-          hint_anchor = "  if (kind === 'cwd') return optional;\n"
-          if "if (kind === 'publication_credential')" not in cli:
-              if hint_anchor not in cli: raise SystemExit('Could not locate MCP input hint')
-              cli = cli.replace(
-                  hint_anchor,
-                  hint_anchor + "  if (kind === 'publication_credential') {\n"
-                  "    return localized(\n"
-                  "      locale,\n"
-                  "      '仅保存到本机凭据存储；不会写入 profile、参数或对话 · Enter 提交 · Esc 返回',\n"
-                  "      '只會儲存在本機憑證儲存區；不會寫入 profile、參數或對話 · Enter 送出 · Esc 返回',\n"
-                  "      'Stored only in the local credential store; never written to profiles, arguments, or chat · Enter submit · Esc back',\n"
-                  "    );\n"
-                  "  }\n",
-                  1,
+          cli = cli_path.read_text()
+
+          import_anchor = "import type { McpProtocolPreference, McpServerConfig } from '@maka/core/mcp';\n"
+          if "generalizedErrorMessageForLocale" not in cli:
+              cli = replace_once(
+                  cli,
+                  import_anchor,
+                  import_anchor + "import { generalizedErrorMessageForLocale } from '@maka/core/redaction';\n",
+                  'MCP core import anchor',
               )
+
+          heading_replacements = [
+              ("heading(this.input.locale, 'Add MCP server', '添加 MCP 服务器')", "heading(this.input.locale, 'Add MCP server', '添加 MCP 服务器', '新增 MCP 伺服器')"),
+              ("heading(this.input.locale, 'Transport', '传输方式')", "heading(this.input.locale, 'Transport', '传输方式', '傳輸方式')"),
+              ("heading(this.input.locale, 'Protocol preference', '协议偏好')", "heading(this.input.locale, 'Protocol preference', '协议偏好', '通訊協定偏好')"),
+              ("heading(locale, 'Add this MCP server?', '添加该 MCP 服务器？')", "heading(locale, 'Add this MCP server?', '添加该 MCP 服务器？', '新增這個 MCP 伺服器？')"),
+              ("heading(locale, 'Import MCP servers?', '导入 MCP 服务器？')", "heading(locale, 'Import MCP servers?', '导入 MCP 服务器？', '匯入 MCP 伺服器？')"),
+          ]
+          for old_h, new_h in heading_replacements:
+              cli = replace_once(cli, old_h, new_h, old_h)
+
+          cli = replace_once(
+              cli,
+              """            `Remove ${this.phase.serverId}?`,\n            `删除 ${this.phase.serverId}？`,\n""",
+              """            `Remove ${this.phase.serverId}?`,\n            `删除 ${this.phase.serverId}？`,\n            `刪除 ${this.phase.serverId}？`,\n""",
+              'remove-server heading',
+          )
+          cli = replace_once(
+              cli,
+              """          'Remove the remote provider credential?',\n          '删除远程 Provider 凭据？',\n""",
+              """          'Remove the remote provider credential?',\n          '删除远程 Provider 凭据？',\n          '刪除遠端 Provider 憑證？',\n""",
+              'publication credential heading',
+          )
+          cli = replace_once(
+              cli,
+              """        this.input.locale === 'zh'\n          ? '这会停止向所选 Runtime Host 发布 MCP 工具。'\n          : 'This stops publishing MCP tools to the selected Runtime Host.',\n""",
+              """        localized(\n          this.input.locale,\n          '这会停止向所选 Runtime Host 发布 MCP 工具。',\n          '這會停止向所選 Runtime Host 發佈 MCP 工具。',\n          'This stops publishing MCP tools to the selected Runtime Host.',\n        ),\n""",
+              'publication credential confirmation detail',
+          )
+
+          cli = replace_once(
+              cli,
+              """    ...(server.error ? [`    ${ansi.red(server.error)}`] : []),\n""",
+              """    ...(server.error\n      ? [\n          `    ${ansi.red(\n            generalizedErrorMessageForLocale(\n              new Error(server.error),\n              localized(locale, 'MCP 服务器连接失败', 'MCP 伺服器連線失敗', server.error),\n              locale,\n            ),\n          )}`,\n        ]\n      : []),\n""",
+              'server error rendering',
+          )
+
+          old_return = "  return (locale === 'zh' ? zh : en)[key] ?? key;\n"
+          zh_tw_catalog = """  const zhTw: Record<string, string> = {\n    exists: '該伺服器 ID 已存在。',\n    stale_config: 'MCP 設定已變更，請重試。',\n    stale_edit: '該伺服器已變更，請重新開啟後編輯。',\n    stale_import: '匯入項目已變更，請重新預覽。',\n    missing: '該伺服器已不存在。',\n    closed: 'MCP 控制器已關閉。',\n    'invalid-config': '伺服器設定無效。',\n    'credential-cleanup-failed': '無法刪除舊憑證，設定未修改。',\n    'publication-credential-failed': '無法儲存或套用 Provider 憑證。',\n    'persist-failed': '無法儲存設定。',\n    'manager-failed': 'MCP 連線操作失敗。',\n    turn_active: 'Turn 或其他控制操作執行期間無法修改 MCP。',\n    invalid: '請檢查輸入後重試。',\n    published: '設定已儲存，工具已重新整理。',\n    pending_host: '設定已儲存，正等待 Runtime Host 發佈。',\n    sync_failed: '設定已儲存，但 MCP Manager 尚未同步。',\n    publication_failed: '設定已儲存，但 capability 發佈失敗。',\n    test_ok: '連線測試通過。',\n    test_failed: '連線測試失敗。',\n    test_publication_failed: '連線測試通過，但 capability 發佈失敗。',\n    test_pending_host: '連線測試通過，正等待 Runtime Host 發佈。',\n  };\n  const catalog = locale === 'zh-CN' ? zh : locale === 'zh-TW' ? zhTw : en;\n  return catalog[key] ?? key;\n"""
+          cli = replace_once(cli, old_return, zh_tw_catalog, 'copy catalog return')
+
+          cli = replace_once(
+              cli,
+              "  if (locale === 'zh') return '正在应用 MCP 更改…';\n",
+              "  if (locale === 'zh-CN') return '正在应用 MCP 更改…';\n  if (locale === 'zh-TW') return '正在套用 MCP 變更…';\n",
+              'action locale branch',
+          )
+
+          input_label_pattern = re.compile(r"function inputLabel\(kind: InputKind, locale: UiLocale\): string \{.*?\n\}\n\nfunction inputHint", re.S)
+          input_label_new = """function inputLabel(kind: InputKind, locale: UiLocale): string {\n  const labels: Record<InputKind, [string, string, string]> = {\n    server_id: ['Server ID', '服务器 ID', '伺服器 ID'],\n    command: ['Command', '命令', '命令'],\n    args: ['Arguments', '参数', '參數'],\n    url: ['Streamable HTTP URL', 'Streamable HTTP URL', 'Streamable HTTP URL'],\n    cwd: ['Working directory', '工作目录', '工作目錄'],\n    env: ['Environment', '环境变量', '環境變數'],\n    headers: ['Request headers', '请求头', '請求標頭'],\n    edit: ['Edit server JSON', '编辑服务器 JSON', '編輯伺服器 JSON'],\n    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],\n    publication_credential: ['Provider credential', 'Provider 凭据', 'Provider 憑證'],\n  };\n  return labels[kind][locale === 'zh-CN' ? 1 : locale === 'zh-TW' ? 2 : 0];\n}\n\nfunction inputHint"""
+          cli, count = input_label_pattern.subn(input_label_new, cli, count=1)
+          if count != 1: raise SystemExit('Could not replace inputLabel')
+
+          input_hint_pattern = re.compile(r"function inputHint\(kind: InputKind, locale: UiLocale\): string \{.*?\n\}\n\nfunction configurationLine", re.S)
+          input_hint_new = """function inputHint(kind: InputKind, locale: UiLocale): string {\n  const optional = localized(locale, '可留空', '可留空', 'optional');\n  if (kind === 'args') return `JSON string array, ${optional}`;\n  if (kind === 'env' || kind === 'headers') return `JSON string map, ${optional}`;\n  if (kind === 'cwd') return optional;\n  if (kind === 'publication_credential') {\n    return localized(\n      locale,\n      '仅保存到本机凭据存储；不会写入 profile、参数或对话 · Enter 提交 · Esc 返回',\n      '只會儲存在本機憑證儲存區；不會寫入 profile、參數或對話 · Enter 送出 · Esc 返回',\n      'Stored only in the local credential store; never written to profiles, arguments, or chat · Enter submit · Esc back',\n    );\n  }\n  return localized(\n    locale,\n    'Enter 提交 · Esc 返回',\n    'Enter 送出 · Esc 返回',\n    'Enter submit · Esc back',\n  );\n}\n\nfunction configurationLine"""
+          cli, count = input_hint_pattern.subn(input_hint_new, cli, count=1)
+          if count != 1: raise SystemExit('Could not replace inputHint')
+
+          config_pattern = re.compile(r"function configurationLine\(state: 'synchronizing' \| 'out_of_sync', locale: UiLocale\): string \{.*?\n\}\n\nfunction unavailableDocument", re.S)
+          config_new = """function configurationLine(state: 'synchronizing' | 'out_of_sync', locale: UiLocale): string {\n  if (state === 'synchronizing') {\n    return localized(locale, '配置同步中…', '設定同步中…', 'Configuration is synchronizing…');\n  }\n  return ansi.red(\n    localized(\n      locale,\n      '持久化配置与 MCP Manager 尚未同步。',\n      '持久化設定與 MCP Manager 尚未同步。',\n      'Durable configuration and MCP Manager are out of sync.',\n    ),\n  );\n}\n\nfunction unavailableDocument"""
+          cli, count = config_pattern.subn(config_new, cli, count=1)
+          if count != 1: raise SystemExit('Could not replace configurationLine')
+
+          cli = replace_once(
+              cli,
+              """function heading(locale: UiLocale, en: string, zh: string): string {\n  return ansi.bold(locale === 'zh' ? zh : en);\n}\n""",
+              """function heading(locale: UiLocale, en: string, zh: string, zhTw: string): string {\n  return ansi.bold(localized(locale, zh, zhTw, en));\n}\n""",
+              'heading helper',
+          )
+          cli = replace_once(
+              cli,
+              """function confirmCopy(locale: UiLocale): string {\n  return locale === 'zh' ? 'y 确认 · Esc 取消' : 'y Confirm · Esc cancel';\n}\n""",
+              """function confirmCopy(locale: UiLocale): string {\n  return localized(locale, 'y 确认 · Esc 取消', 'y 確認 · Esc 取消', 'y Confirm · Esc cancel');\n}\n""",
+              'confirmCopy helper',
+          )
+
+          if 'function localized(' not in cli:
+              clamp_anchor = 'function clamp(value: number, min: number, max: number): number {\n'
+              localized_helper = """function localized(\n  locale: UiLocale,\n  simplified: string,\n  traditional: string,\n  english: string,\n): string {\n  if (locale === 'zh-CN') return simplified;\n  return locale === 'zh-TW' ? traditional : english;\n}\n\n"""
+              cli = replace_once(cli, clamp_anchor, localized_helper + clamp_anchor, 'clamp helper anchor')
+
+          if "locale === 'zh'" in cli:
+              raise SystemExit("Legacy locale === 'zh' branch remains in MCP TUI")
           cli_path.write_text(cli)
 
+          # Shared UI conversation copy: preserve locale split and fold in upstream
+          # edit/resend constraints for both Chinese locales.
           ui_path = Path('packages/ui/src/conversation-copy.ts')
           ui = choose_ours(str(ui_path))
           for locale, nxt, transformed, directory in [
@@ -191,6 +284,8 @@ jobs:
             git commit --no-edit
           fi
 
+          # Protect the original review-split history. The restored PR head must be
+          # an ancestor of the final result; this workflow never rebases/squashes it.
           git merge-base --is-ancestor "${feature_sha}" HEAD
           git diff --check "${base_sha}"...HEAD
           echo "resolved_sha=$(git rev-parse HEAD)"
