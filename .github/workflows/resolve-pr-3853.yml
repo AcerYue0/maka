@@ -20,6 +20,8 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/apache/maka.git 2>/dev/null || git remote set-url upstream https://github.com/apache/maka.git
           git fetch --no-tags upstream main
           git fetch --no-tags origin feat/zh-tw-locale
@@ -40,9 +42,7 @@ jobs:
           while IFS= read -r file; do
             echo
             echo "===== ${file} ====="
-            if git ls-files -u -- "${file}" | grep -q .; then
-              git checkout --conflict=merge -- "${file}" 2>/dev/null || true
-            fi
+            git checkout --conflict=merge -- "${file}" 2>/dev/null || true
             python - "${file}" <<'PY'
           from pathlib import Path
           import sys
@@ -54,7 +54,7 @@ jobs:
           lines = path.read_text(errors='replace').splitlines()
           markers = [i for i, line in enumerate(lines) if line.startswith('<<<<<<<')]
           if not markers:
-              print('[no text conflict markers; showing staged variants]')
+              print('[no text conflict markers; showing staged variants below]')
           else:
               shown = set()
               for marker in markers:
@@ -66,10 +66,10 @@ jobs:
                           shown.add(i)
                   print('-----')
           PY
-            echo '--- stage 2 (feature/ours) ---'
-            git show ":2:${file}" 2>/dev/null | sed -n '1,220p' || true
-            echo '--- stage 3 (upstream/theirs) ---'
-            git show ":3:${file}" 2>/dev/null | sed -n '1,220p' || true
+            echo '--- stage 2 (feature/ours), first 260 lines ---'
+            git show ":2:${file}" 2>/dev/null | sed -n '1,260p' || true
+            echo '--- stage 3 (upstream/theirs), first 260 lines ---'
+            git show ":3:${file}" 2>/dev/null | sed -n '1,260p' || true
           done < <(git diff --name-only --diff-filter=U)
 
           exit 1
