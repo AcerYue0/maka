@@ -6,70 +6,263 @@ on:
       - backup/feat-zh-tw-locale-before-conflict-resolution
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  resolve:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Print exact merge conflict hunks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.1
+          cache: npm
+
+      - name: Merge latest upstream and resolve conflicts
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/apache/maka.git 2>/dev/null || git remote set-url upstream https://github.com/apache/maka.git
           git fetch --no-tags upstream main
           git fetch --no-tags origin feat/zh-tw-locale
-          git checkout -B resolve-pr-3853 origin/feat/zh-tw-locale
 
+          feature_sha="$(git rev-parse origin/feat/zh-tw-locale)"
+          base_sha="$(git rev-parse upstream/main)"
+          echo "feature_sha=${feature_sha}"
+          echo "base_sha=${base_sha}"
+
+          # The PR's existing review-driven commits must remain untouched.
+          git checkout -B resolve-pr-3853 "${feature_sha}"
           set +e
           git merge --no-ff upstream/main -m "Merge apache/main into feat/zh-tw-locale"
-          status=$?
+          merge_status=$?
           set -e
-          if [[ ${status} -eq 0 ]]; then
-            echo 'No conflicts.'
-            exit 0
+
+          if [[ ${merge_status} -ne 0 ]]; then
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+            printf 'Current conflicts:\n%s\n' "${conflicts[*]}"
+
+            expected=(
+              'apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts'
+              'apps/desktop/src/renderer/locales/conversation-copy.ts'
+              'apps/desktop/src/renderer/settings/provider-oauth-section.tsx'
+              'apps/desktop/src/renderer/settings/providers-panel.tsx'
+              'packages/cli/src/pi-tui-mcp-status.ts'
+              'packages/ui/src/conversation-copy.ts'
+            )
+            if [[ "$(printf '%s\n' "${conflicts[@]}" | sort)" != "$(printf '%s\n' "${expected[@]}" | sort)" ]]; then
+              echo 'Conflict set changed; refusing to guess.'
+              exit 2
+            fi
+
+            # Upstream replaced use-session-tasks.ts with use-session-todo.ts.
+            # Keep the upstream refactor and port this PR's locale-aware fallback.
+            git rm apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts
+            python <<'PY'
+          from pathlib import Path
+          path = Path('apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts')
+          text = path.read_text()
+          old_import = "import { generalizedErrorMessage, generalizedErrorMessageChinese } from '@maka/core/redaction';"
+          old_error = """          error:\n            copy.locale === 'zh'\n              ? generalizedErrorMessageChinese(error, copy.loadFailed)\n              : generalizedErrorMessage(error, copy.loadFailed),"""
+          if old_import in text:
+              text = text.replace(old_import, "import { generalizedErrorMessageForLocale } from '@maka/core/redaction';")
+          if old_error in text:
+              text = text.replace(old_error, "          error: generalizedErrorMessageForLocale(error, copy.loadFailed, copy.locale),")
+          if 'generalizedErrorMessageForLocale(error, copy.loadFailed, copy.locale)' not in text:
+              raise SystemExit('Failed to port locale-aware todo error fallback')
+          path.write_text(text)
+          PY
+            git add apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts
+
+            # The OAuth flow was substantially redesigned upstream. Preserve the
+            # new connection-identity architecture; its copy already flows through
+            # useUiLocale/getProviderSettingsCopy in the merged i18n tree.
+            git checkout --theirs -- apps/desktop/src/renderer/settings/provider-oauth-section.tsx
+            git add apps/desktop/src/renderer/settings/provider-oauth-section.tsx
+
+            python <<'PY'
+          from pathlib import Path
+          import re
+
+          def choose_ours(path_str: str) -> str:
+              path = Path(path_str)
+              lines = path.read_text().splitlines(keepends=True)
+              out = []
+              i = 0
+              while i < len(lines):
+                  if not lines[i].startswith('<<<<<<<'):
+                      out.append(lines[i]); i += 1; continue
+                  i += 1
+                  ours = []
+                  while i < len(lines) and not lines[i].startswith('======='):
+                      ours.append(lines[i]); i += 1
+                  if i >= len(lines): raise SystemExit(f'Bad conflict block in {path}')
+                  i += 1
+                  while i < len(lines) and not lines[i].startswith('>>>>>>>'):
+                      i += 1
+                  if i >= len(lines): raise SystemExit(f'Bad conflict block in {path}')
+                  i += 1
+                  out.extend(ours)
+              text = ''.join(out)
+              path.write_text(text)
+              return text
+
+          def locale_section(text: str, key: str, next_key: str) -> tuple[int, int, str]:
+              start_token = f"  '{key}': {{"
+              start = text.index(start_token)
+              if next_key == 'en':
+                  end = text.index('  en: {', start)
+              else:
+                  end = text.index(f"  '{next_key}': {{", start)
+              return start, end, text[start:end]
+
+          def replace_section(text: str, start: int, end: int, section: str) -> str:
+              return text[:start] + section + text[end:]
+
+          # Desktop conversation catalog: retain zh-CN/zh-TW split, while adding
+          # fields introduced on upstream's former single zh catalog.
+          desktop_path = Path('apps/desktop/src/renderer/locales/conversation-copy.ts')
+          desktop = choose_ours(str(desktop_path))
+          for locale, nxt, title, detail, todo in [
+              ('zh-CN', 'zh-TW', '图片已作为附件添加', '当前模型不会直接接收图片。图片已作为附件提供给模型。', '待办载入失败，请重试。'),
+              ('zh-TW', 'en', '圖片已作為附件加入', '目前模型不會直接接收圖片。圖片已作為附件提供給模型。', '待辦載入失敗，請重試。'),
+          ]:
+              start, end, sec = locale_section(desktop, locale, nxt)
+              if 'imageAttachmentNotDirectTitle:' not in sec:
+                  sec, count = re.subn(
+                      r"(attachmentFailedTitle:\s*'[^']*',)",
+                      rf"\1 imageAttachmentNotDirectTitle: '{title}', imageAttachmentNotDirectDescription: '{detail}',",
+                      sec,
+                      count=1,
+                  )
+                  if count != 1: raise SystemExit(f'Could not add image attachment copy for {locale}')
+              if 'todoLoadFailed:' not in sec:
+                  sec, count = re.subn(
+                      r"(\n\s*tasks:\s*'[^']*',)",
+                      rf"\1\n      todoLoadFailed: '{todo}',",
+                      sec,
+                      count=1,
+                  )
+                  if count != 1: raise SystemExit(f'Could not add todo load copy for {locale}')
+              desktop = replace_section(desktop, start, end, sec)
+          desktop_path.write_text(desktop)
+
+          # Providers panel: keep upstream's stable connection identity type and
+          # this PR's expanded locale union.
+          panel_path = Path('apps/desktop/src/renderer/settings/providers-panel.tsx')
+          panel = panel_path.read_text()
+          pattern = re.compile(
+              r"<<<<<<< ours\n"
+              r"function connectionSubtitle\(connection: LlmConnection, locale: 'zh-CN' \| 'zh-TW' \| 'en'\): string \{\n"
+              r"=======\n"
+              r"function connectionSubtitle\(connection: IdentifiedLlmConnection, locale: 'zh' \| 'en'\): string \{\n"
+              r">>>>>>> theirs\n"
+          )
+          panel, count = pattern.subn(
+              "function connectionSubtitle(connection: IdentifiedLlmConnection, locale: 'zh-CN' | 'zh-TW' | 'en'): string {\n",
+              panel,
+              count=1,
+          )
+          if count != 1: raise SystemExit('Unexpected providers-panel conflict shape')
+          panel_path.write_text(panel)
+
+          # CLI MCP overlay: keep upstream publication-credential feature and add
+          # the zh-TW labels/hints introduced by this PR.
+          cli_path = Path('packages/cli/src/pi-tui-mcp-status.ts')
+          cli = choose_ours(str(cli_path))
+          if "publication_credential: ['Provider credential'" not in cli:
+              anchor = "    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],\n"
+              if anchor not in cli: raise SystemExit('Could not locate MCP input labels')
+              cli = cli.replace(
+                  anchor,
+                  anchor + "    publication_credential: ['Provider credential', 'Provider 凭据', 'Provider 憑證'],\n",
+                  1,
+              )
+          hint_anchor = "  if (kind === 'cwd') return optional;\n"
+          if "if (kind === 'publication_credential')" not in cli:
+              if hint_anchor not in cli: raise SystemExit('Could not locate MCP input hint')
+              cli = cli.replace(
+                  hint_anchor,
+                  hint_anchor + "  if (kind === 'publication_credential') {\n"
+                  "    return localized(\n"
+                  "      locale,\n"
+                  "      '仅保存到本机凭据存储；不会写入 profile、参数或对话 · Enter 提交 · Esc 返回',\n"
+                  "      '只會儲存在本機憑證儲存區；不會寫入 profile、參數或對話 · Enter 送出 · Esc 返回',\n"
+                  "      'Stored only in the local credential store; never written to profiles, arguments, or chat · Enter submit · Esc back',\n"
+                  "    );\n"
+                  "  }\n",
+                  1,
+              )
+          cli_path.write_text(cli)
+
+          # Shared UI conversation copy: retain the split locale catalog and fold
+          # in upstream's new edit/resend constraints for both Chinese locales.
+          ui_path = Path('packages/ui/src/conversation-copy.ts')
+          ui = choose_ours(str(ui_path))
+          for locale, nxt, transformed, directory in [
+              ('zh-CN', 'zh-TW', '包含已展开上下文的历史消息暂不支持编辑并重发', '包含文件夹引用的历史消息暂不支持编辑并重发'),
+              ('zh-TW', 'en', '包含已展開上下文的歷史訊息暫不支援編輯並重發', '包含資料夾引用的歷史訊息暫不支援編輯並重發'),
+          ]:
+              start, end, sec = locale_section(ui, locale, nxt)
+              sec, count = re.subn(
+                  r"editMessageDisabledTransformedText:\s*'[^']*'",
+                  f"editMessageDisabledTransformedText: '{transformed}'",
+                  sec,
+                  count=1,
+              )
+              if count != 1: raise SystemExit(f'Could not update transformed-text copy for {locale}')
+              if 'editMessageDisabledDirectoryReferences:' not in sec:
+                  needle = f"editMessageDisabledTransformedText: '{transformed}',"
+                  if needle not in sec: raise SystemExit(f'Could not add directory-reference copy for {locale}')
+                  sec = sec.replace(
+                      needle,
+                      needle + f" editMessageDisabledDirectoryReferences: '{directory}',",
+                      1,
+                  )
+              ui = replace_section(ui, start, end, sec)
+          ui_path.write_text(ui)
+          PY
+
+            git add \
+              apps/desktop/src/renderer/locales/conversation-copy.ts \
+              apps/desktop/src/renderer/settings/providers-panel.tsx \
+              packages/cli/src/pi-tui-mcp-status.ts \
+              packages/ui/src/conversation-copy.ts
+
+            if [[ -n "$(git diff --name-only --diff-filter=U)" ]]; then
+              echo 'Unresolved conflicts remain:'
+              git diff --name-only --diff-filter=U
+              exit 3
+            fi
+            git commit --no-edit
           fi
 
-          echo '=== CONFLICT PATHS ==='
-          git diff --name-only --diff-filter=U
-          echo '=== CONFLICT HUNKS ==='
-          while IFS= read -r file; do
-            echo
-            echo "===== ${file} ====="
-            git checkout --conflict=merge -- "${file}" 2>/dev/null || true
-            python - "${file}" <<'PY'
-          from pathlib import Path
-          import sys
+          # Guard against any accidental history rewrite: the restored feature
+          # head must be an ancestor of the result.
+          git merge-base --is-ancestor "${feature_sha}" HEAD
+          git diff --check "${base_sha}"...HEAD
 
-          path = Path(sys.argv[1])
-          if not path.exists():
-              print('[deleted in working tree]')
-              raise SystemExit
-          lines = path.read_text(errors='replace').splitlines()
-          markers = [i for i, line in enumerate(lines) if line.startswith('<<<<<<<')]
-          if not markers:
-              print('[no text conflict markers; showing staged variants below]')
-          else:
-              shown = set()
-              for marker in markers:
-                  start = max(0, marker - 12)
-                  end = min(len(lines), marker + 45)
-                  for i in range(start, end):
-                      if i not in shown:
-                          print(f'{i+1:5}: {lines[i]}')
-                          shown.add(i)
-                  print('-----')
-          PY
-            echo '--- stage 2 (feature/ours), first 260 lines ---'
-            git show ":2:${file}" 2>/dev/null | sed -n '1,260p' || true
-            echo '--- stage 3 (upstream/theirs), first 260 lines ---'
-            git show ":3:${file}" 2>/dev/null | sed -n '1,260p' || true
-          done < <(git diff --name-only --diff-filter=U)
+          echo "resolved_sha=$(git rev-parse HEAD)"
 
-          exit 1
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Push conflict resolution only
+        shell: bash
+        run: |
+          set -euo pipefail
+          feature_sha="$(git rev-parse origin/feat/zh-tw-locale)"
+          git merge-base --is-ancestor "${feature_sha}" HEAD
+          git push origin HEAD:refs/heads/feat/zh-tw-locale
