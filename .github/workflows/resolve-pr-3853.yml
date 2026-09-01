@@ -1,0 +1,56 @@
+name: Resolve PR 3853
+
+on:
+  push:
+    branches:
+      - backup/feat-zh-tw-locale-before-conflict-resolution
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.1
+          cache: npm
+
+      - name: Rebase i18n change onto latest upstream main
+        shell: bash
+        run: |
+          set -uo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/apache/maka.git 2>/dev/null || git remote set-url upstream https://github.com/apache/maka.git
+          git fetch --no-tags upstream main
+          git fetch --no-tags origin feat/zh-tw-locale
+
+          feature_sha="$(git rev-parse origin/feat/zh-tw-locale)"
+          base_sha="$(git rev-parse upstream/main)"
+          echo "feature_sha=${feature_sha}"
+          echo "base_sha=${base_sha}"
+
+          git checkout --detach "${base_sha}"
+          if ! git cherry-pick -Xtheirs "${feature_sha}"; then
+            echo "CHERRY_PICK_CONFLICTS_BEGIN"
+            git status --short
+            git diff --name-only --diff-filter=U
+            echo "CHERRY_PICK_CONFLICTS_END"
+            exit 2
+          fi
+
+          git diff --check "${base_sha}"...HEAD
+          npm ci
+          npm run typecheck
+          npm run format:check
+
+          resolved_sha="$(git rev-parse HEAD)"
+          echo "resolved_sha=${resolved_sha}"
+          git push --force-with-lease=refs/heads/feat/zh-tw-locale:"${feature_sha}" origin HEAD:refs/heads/feat/zh-tw-locale
