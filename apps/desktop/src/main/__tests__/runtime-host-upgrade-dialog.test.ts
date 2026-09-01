@@ -48,7 +48,12 @@ test('localizes upgrade activity without changing decision indexes', () => {
   const zh = buildRuntimeHostUpgradeDialog(
     conflict,
     { action: 'restart', canWait: true },
-    'zh',
+    'zh-CN',
+  ).options;
+  const zhTw = buildRuntimeHostUpgradeDialog(
+    conflict,
+    { action: 'restart', canWait: true },
+    'zh-TW',
   ).options;
   assert.deepEqual(en.buttons, ['Restart Runtime Host', 'Wait', 'Cancel Startup']);
   assert.deepEqual(zh.buttons, ['重启 Runtime Host', '等待', '取消启动']);
@@ -58,6 +63,9 @@ test('localizes upgrade activity without changing decision indexes', () => {
   assert.match(zh.detail ?? '', /每日回顾: 1/);
   assert.match(en.detail ?? '', /Scheduled Task: 2/);
   assert.match(zh.detail ?? '', /计划任务: 2/);
+  assert.deepEqual(zhTw.buttons, ['重啟 Runtime Host', '等待', '取消啟動']);
+  assert.match(zhTw.detail ?? '', /仍有 2 個其他客戶端連線/);
+  assert.match(zhTw.detail ?? '', /每日回顧: 1/);
   assert.match(en.detail ?? '', /Process ID \(PID\):/);
 });
 

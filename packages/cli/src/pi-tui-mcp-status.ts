@@ -27,6 +27,7 @@ import {
   type TUI,
 } from '@earendil-works/pi-tui';
 import type { McpProtocolPreference, McpServerConfig } from '@maka/core/mcp';
+import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
 import {
   defineUiMessageCatalog,
   formatUiMessage,
@@ -412,7 +413,7 @@ export class McpManagementOverlay implements Component {
     if (this.phase.kind === 'input') return this.inputDocument(width);
     if (this.phase.kind === 'add_choice') {
       return [
-        heading(this.input.locale, 'Add MCP server', '添加 MCP 服务器'),
+        heading(this.input.locale, 'Add MCP server', '添加 MCP 服务器', '新增 MCP 伺服器'),
         '',
         'g  Guided setup',
         'j  Paste JSON',
@@ -420,7 +421,7 @@ export class McpManagementOverlay implements Component {
     }
     if (this.phase.kind === 'transport') {
       return [
-        heading(this.input.locale, 'Transport', '传输方式'),
+        heading(this.input.locale, 'Transport', '传输方式', '傳輸方式'),
         '',
         '1  stdio',
         '2  Streamable HTTP',
@@ -428,7 +429,7 @@ export class McpManagementOverlay implements Component {
     }
     if (this.phase.kind === 'protocol') {
       return [
-        heading(this.input.locale, 'Protocol preference', '协议偏好'),
+        heading(this.input.locale, 'Protocol preference', '协议偏好', '通訊協定偏好'),
         '',
         '1  legacy',
         '2  auto',
@@ -448,6 +449,7 @@ export class McpManagementOverlay implements Component {
             this.input.locale,
             `Remove ${this.phase.serverId}?`,
             `删除 ${this.phase.serverId}？`,
+            `刪除 ${this.phase.serverId}？`,
           ),
         ),
         '',
@@ -629,7 +631,17 @@ function serverLines(server: TuiMcpServerSnapshot, locale: UiLocale, selected: b
   const cursor = selected ? ansi.accent('›') : ' ';
   return [
     `${cursor} ${statusMarker(server.state)} ${ansi.bold(server.serverId)}  ${details}`,
-    ...(server.error ? [`    ${ansi.red(server.error)}`] : []),
+    ...(server.error
+      ? [
+          `    ${ansi.red(
+            generalizedErrorMessageForLocale(
+              new Error(server.error),
+              localized(locale, 'MCP 服务器连接失败', 'MCP 伺服器連線失敗', server.error),
+              locale,
+            ),
+          )}`,
+        ]
+      : []),
   ];
 }
 
@@ -704,12 +716,35 @@ function copy(locale: UiLocale, key: string): string {
     test_publication_failed: '连接测试通过，但 capability 发布失败。',
     test_pending_host: '连接测试通过，正等待 Runtime Host 发布。',
   };
-  return (locale === 'zh' ? zh : en)[key] ?? key;
+  const zhTw: Record<string, string> = {
+    exists: '該伺服器 ID 已存在。',
+    stale_config: 'MCP 設定已變更，請重試。',
+    stale_edit: '該伺服器已變更，請重新開啟後編輯。',
+    stale_import: '匯入項目已變更，請重新預覽。',
+    missing: '該伺服器已不存在。',
+    closed: 'MCP 控制器已關閉。',
+    'invalid-config': '伺服器設定無效。',
+    'credential-cleanup-failed': '無法刪除舊憑證，設定未修改。',
+    'persist-failed': '無法儲存設定。',
+    'manager-failed': 'MCP 連線操作失敗。',
+    turn_active: 'Turn 或其他控制操作執行期間無法修改 MCP。',
+    invalid: '請檢查輸入後重試。',
+    published: '設定已儲存，工具已重新整理。',
+    pending_host: '設定已儲存，正等待 Runtime Host 發佈。',
+    sync_failed: '設定已儲存，但 MCP Manager 尚未同步。',
+    publication_failed: '設定已儲存，但 capability 發佈失敗。',
+    test_ok: '連線測試通過。',
+    test_failed: '連線測試失敗。',
+    test_publication_failed: '連線測試通過，但 capability 發佈失敗。',
+    test_pending_host: '連線測試通過，正等待 Runtime Host 發佈。',
+  };
+  const catalog = locale === 'zh-CN' ? zh : locale === 'zh-TW' ? zhTw : en;
+  return catalog[key] ?? key;
 }
 
 function confirmAddDocument(draft: GuidedDraft, locale: UiLocale): string[] {
   return [
-    heading(locale, 'Add this MCP server?', '添加该 MCP 服务器？'),
+    heading(locale, 'Add this MCP server?', '添加该 MCP 服务器？', '新增這個 MCP 伺服器？'),
     '',
     `${draft.serverId} · ${draft.transport} · ${draft.protocol}`,
     draft.transport === 'stdio' ? (draft.command ?? '') : (draft.url ?? ''),
@@ -720,7 +755,7 @@ function confirmAddDocument(draft: GuidedDraft, locale: UiLocale): string[] {
 
 function confirmImportDocument(preview: TuiMcpImportPreview, locale: UiLocale): string[] {
   return [
-    heading(locale, 'Import MCP servers?', '导入 MCP 服务器？'),
+    heading(locale, 'Import MCP servers?', '导入 MCP 服务器？', '匯入 MCP 伺服器？'),
     '',
     ...preview.entries.map(
       (entry) =>
@@ -732,43 +767,52 @@ function confirmImportDocument(preview: TuiMcpImportPreview, locale: UiLocale): 
 }
 
 function actionLabel(action: TuiMcpAction, locale: UiLocale): string {
-  if (locale === 'zh') return '正在应用 MCP 更改…';
+  if (locale === 'zh-CN') return '正在应用 MCP 更改…';
+  if (locale === 'zh-TW') return '正在套用 MCP 變更…';
   if (action.kind === 'test') return 'Testing MCP server…';
   if (action.kind === 'reconnect') return 'Reconnecting MCP server…';
   return 'Applying MCP configuration…';
 }
 
 function inputLabel(kind: InputKind, locale: UiLocale): string {
-  const labels: Record<InputKind, [string, string]> = {
-    server_id: ['Server ID', '服务器 ID'],
-    command: ['Command', '命令'],
-    args: ['Arguments', '参数'],
-    url: ['Streamable HTTP URL', 'Streamable HTTP URL'],
-    cwd: ['Working directory', '工作目录'],
-    env: ['Environment', '环境变量'],
-    headers: ['Request headers', '请求头'],
-    edit: ['Edit server JSON', '编辑服务器 JSON'],
-    import: ['Paste MCP JSON', '粘贴 MCP JSON'],
+  const labels: Record<InputKind, [string, string, string]> = {
+    server_id: ['Server ID', '服务器 ID', '伺服器 ID'],
+    command: ['Command', '命令', '命令'],
+    args: ['Arguments', '参数', '參數'],
+    url: ['Streamable HTTP URL', 'Streamable HTTP URL', 'Streamable HTTP URL'],
+    cwd: ['Working directory', '工作目录', '工作目錄'],
+    env: ['Environment', '环境变量', '環境變數'],
+    headers: ['Request headers', '请求头', '請求標頭'],
+    edit: ['Edit server JSON', '编辑服务器 JSON', '編輯伺服器 JSON'],
+    import: ['Paste MCP JSON', '粘贴 MCP JSON', '貼上 MCP JSON'],
   };
-  return labels[kind][locale === 'zh' ? 1 : 0];
+  return labels[kind][locale === 'zh-CN' ? 1 : locale === 'zh-TW' ? 2 : 0];
 }
 
 function inputHint(kind: InputKind, locale: UiLocale): string {
-  const optional = locale === 'zh' ? '可留空' : 'optional';
+  const optional = localized(locale, '可留空', '可留空', 'optional');
   if (kind === 'args') return `JSON string array, ${optional}`;
   if (kind === 'env' || kind === 'headers') return `JSON string map, ${optional}`;
   if (kind === 'cwd') return optional;
-  return locale === 'zh' ? 'Enter 提交 · Esc 返回' : 'Enter submit · Esc back';
+  return localized(
+    locale,
+    'Enter 提交 · Esc 返回',
+    'Enter 送出 · Esc 返回',
+    'Enter submit · Esc back',
+  );
 }
 
 function configurationLine(state: 'synchronizing' | 'out_of_sync', locale: UiLocale): string {
   if (state === 'synchronizing') {
-    return locale === 'zh' ? '配置同步中…' : 'Configuration is synchronizing…';
+    return localized(locale, '配置同步中…', '設定同步中…', 'Configuration is synchronizing…');
   }
   return ansi.red(
-    locale === 'zh'
-      ? '持久化配置与 MCP Manager 尚未同步。'
-      : 'Durable configuration and MCP Manager are out of sync.',
+    localized(
+      locale,
+      '持久化配置与 MCP Manager 尚未同步。',
+      '持久化設定與 MCP Manager 尚未同步。',
+      'Durable configuration and MCP Manager are out of sync.',
+    ),
   );
 }
 
@@ -777,12 +821,12 @@ function unavailableDocument(locale: UiLocale): string[] {
   return [ansi.yellow(copy.unavailableTitle), copy.unavailableDetail];
 }
 
-function heading(locale: UiLocale, en: string, zh: string): string {
-  return ansi.bold(locale === 'zh' ? zh : en);
+function heading(locale: UiLocale, en: string, zh: string, zhTw: string): string {
+  return ansi.bold(localized(locale, zh, zhTw, en));
 }
 
 function confirmCopy(locale: UiLocale): string {
-  return locale === 'zh' ? 'y 确认 · Esc 取消' : 'y Confirm · Esc cancel';
+  return localized(locale, 'y 确认 · Esc 取消', 'y 確認 · Esc 取消', 'y Confirm · Esc cancel');
 }
 
 function loadingCopy(locale: UiLocale): string {
@@ -808,6 +852,16 @@ function stateLabel(state: TuiMcpServerSnapshot['state'], locale: UiLocale): str
   const copy = MCP_STATUS_COPY[locale];
   if (!state) return copy.configuredOnly;
   return copy.serverState[state] ?? state;
+}
+
+function localized(
+  locale: UiLocale,
+  simplified: string,
+  traditional: string,
+  english: string,
+): string {
+  if (locale === 'zh-CN') return simplified;
+  return locale === 'zh-TW' ? traditional : english;
 }
 
 function clamp(value: number, min: number, max: number): number {

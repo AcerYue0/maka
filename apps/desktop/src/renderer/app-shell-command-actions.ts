@@ -299,7 +299,16 @@ export function buildAppShellCommandList(
           window.maka.memory.openFile(host),
         );
         if (!result.ok) {
-          toastApi.error(copy.memoryOpenFailedTitle, result.message, undefined, diagnosticTarget);
+          toastApi.error(
+            copy.memoryOpenFailedTitle,
+            commandPaletteActionErrorMessage(
+              new Error(result.message),
+              copy.memoryOpenFallback,
+              options.uiLocale,
+            ),
+            undefined,
+            diagnosticTarget,
+          );
         }
       } catch (err) {
         toastApi.error(

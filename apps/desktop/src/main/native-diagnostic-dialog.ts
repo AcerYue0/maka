@@ -156,11 +156,17 @@ const DIALOG_COPY = {
     copied: 'Diagnostics copied. You can paste them into an issue report.',
     copyFailed: 'Could not copy diagnostics.',
   },
-  zh: {
+  'zh-CN': {
     copy: '复制诊断信息',
     copyAgain: '再次复制',
     copied: '诊断信息已复制，可直接粘贴到问题报告中。',
     copyFailed: '无法复制诊断信息。',
+  },
+  'zh-TW': {
+    copy: '複製診斷資訊',
+    copyAgain: '再次複製',
+    copied: '診斷資訊已複製，可直接貼上到問題報告中。',
+    copyFailed: '無法複製診斷資訊。',
   },
 } as const;
 
@@ -171,10 +177,16 @@ const FATAL_STARTUP_COPY = {
     unknownError: 'An unknown startup error occurred.',
     exit: 'Exit',
   },
-  zh: {
+  'zh-CN': {
     title: 'Maka 启动失败',
     message: 'Maka 无法完成启动。',
     unknownError: '启动时发生未知错误。',
+    exit: '退出',
+  },
+  'zh-TW': {
+    title: 'Maka 啟動失敗',
+    message: 'Maka 無法完成啟動。',
+    unknownError: '啟動時發生未知錯誤。',
     exit: '退出',
   },
 } as const;
@@ -187,11 +199,18 @@ const MAIN_RENDERER_GONE_COPY = {
     relaunch: 'Relaunch',
     exit: 'Exit',
   },
-  zh: {
+  'zh-CN': {
     title: 'Maka 需要恢复',
     message: 'Maka 界面意外停止运行。',
     detail: '重新启动 Maka 以继续，或退出后稍后再打开。',
     relaunch: '重新启动',
+    exit: '退出',
+  },
+  'zh-TW': {
+    title: 'Maka 需要恢復',
+    message: 'Maka 介面意外停止執行。',
+    detail: '重新啟動 Maka 以繼續，或退出後稍後再開啟。',
+    relaunch: '重新啟動',
     exit: '退出',
   },
 } as const;

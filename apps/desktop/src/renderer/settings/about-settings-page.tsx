@@ -128,7 +128,10 @@ export function AboutSettingsPage(props: { onOpenKeyboardHelp?(): void }) {
       const status = await window.maka.app.checkForUpdates();
       if (aboutPageMountedRef.current) setUpdateStatus(status);
       if (status.state === 'error') {
-        toast.error(copy.updateCheckFailed, copy.updateCheckFailedDetail(status.message));
+        toast.error(
+          copy.updateCheckFailed,
+          copy.updateCheckFailedDetail(settingsActionErrorMessage(status.message, locale)),
+        );
       }
     } catch (error) {
       if (aboutPageMountedRef.current) {
@@ -219,6 +222,7 @@ export function AboutSettingsPage(props: { onOpenKeyboardHelp?(): void }) {
             title={copy.checkForUpdates}
             detail={aboutUpdateStatusDetail(updateStatus, copy, {
               isDevBuild: info.buildMode === 'dev',
+              errorDetail: (message) => settingsActionErrorMessage(message, locale),
             })}
             action={(
               <Button

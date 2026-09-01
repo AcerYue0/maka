@@ -332,30 +332,41 @@ function sessionConnectionIdentityNotice(
   locale: UiLocale,
 ): string | undefined {
   if (!identities) return undefined;
-  const emptyChoiceRecovery =
-    locale === 'zh'
-      ? '如果 /model 没有可选项，请先添加或启用连接（API Key 连接可运行 /setup）。'
-      : 'If /model has no choices, add or enable a connection first (run /setup for API-key connections).';
+  const localized = (simplified: string, traditional: string, english: string): string =>
+    locale === 'zh-CN' ? simplified : locale === 'zh-TW' ? traditional : english;
+  const emptyChoiceRecovery = localized(
+    '如果 /model 没有可选项，请先添加或启用连接（API Key 连接可运行 /setup）。',
+    '如果 /model 沒有可選項，請先新增或啟用連線（API Key 連線可執行 /setup）。',
+    'If /model has no choices, add or enable a connection first (run /setup for API-key connections).',
+  );
   if (!session.llmConnectionId) {
-    return locale === 'zh'
-      ? `此任务来自旧版本，需要确认一次账号。运行 /model 选择现有账号和模型。${emptyChoiceRecovery}`
-      : `This task comes from an older version and needs a one-time account confirmation. Run /model and choose an existing account and model. ${emptyChoiceRecovery}`;
+    return localized(
+      `此任务来自旧版本，需要确认一次账号。运行 /model 选择现有账号和模型。${emptyChoiceRecovery}`,
+      `此任務來自舊版本，需要確認一次帳號。執行 /model 選擇現有帳號和模型。${emptyChoiceRecovery}`,
+      `This task comes from an older version and needs a one-time account confirmation. Run /model and choose an existing account and model. ${emptyChoiceRecovery}`,
+    );
   }
   const identified = identities.find((entry) => entry.connectionId === session.llmConnectionId);
   if (!identified) {
-    return locale === 'zh'
-      ? `原账号已删除；运行 /model 选择新账号和模型后继续。${emptyChoiceRecovery}`
-      : `The original account was deleted. Run /model and choose a new account and model to continue. ${emptyChoiceRecovery}`;
+    return localized(
+      `原账号已删除；运行 /model 选择新账号和模型后继续。${emptyChoiceRecovery}`,
+      `原帳號已刪除；執行 /model 選擇新帳號和模型後繼續。${emptyChoiceRecovery}`,
+      `The original account was deleted. Run /model and choose a new account and model to continue. ${emptyChoiceRecovery}`,
+    );
   }
   if (identified.connectionSlug !== session.llmConnectionSlug) {
-    return locale === 'zh'
-      ? `任务保存的账号身份与当前连接不一致；运行 /model 重新选择账号和模型。${emptyChoiceRecovery}`
-      : `The saved account identity no longer matches its connection. Run /model and choose an account and model again. ${emptyChoiceRecovery}`;
+    return localized(
+      `任务保存的账号身份与当前连接不一致；运行 /model 重新选择账号和模型。${emptyChoiceRecovery}`,
+      `任務儲存的帳號身分與目前連線不一致；執行 /model 重新選擇帳號和模型。${emptyChoiceRecovery}`,
+      `The saved account identity no longer matches its connection. Run /model and choose an account and model again. ${emptyChoiceRecovery}`,
+    );
   }
   if (!identified.enabled) {
-    return locale === 'zh'
-      ? `原账号已停用；请启用该账号，或运行 /model 选择新账号和模型。${emptyChoiceRecovery}`
-      : `The original account is disabled. Enable it, or run /model and choose a new account and model. ${emptyChoiceRecovery}`;
+    return localized(
+      `原账号已停用；请启用该账号，或运行 /model 选择新账号和模型。${emptyChoiceRecovery}`,
+      `原帳號已停用；請啟用該帳號，或執行 /model 選擇新帳號和模型。${emptyChoiceRecovery}`,
+      `The original account is disabled. Enable it, or run /model and choose a new account and model. ${emptyChoiceRecovery}`,
+    );
   }
   return undefined;
 }

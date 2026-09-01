@@ -19,7 +19,7 @@
 
 import type { UiCatalog, UiLocale } from '@maka/core/ui-locale';
 
-const ZH = {
+const ZH_CN = {
     shareAction: '分享此任务',
     shareTitle: '分享任务',
     shareDescription: '创建一次性邀请，让另一台 Maka 访问这个任务。',
@@ -80,8 +80,68 @@ const ZH = {
 };
 
 type SessionCollaborationCopy = {
-  readonly [Key in keyof typeof ZH]: string;
+  readonly [Key in keyof typeof ZH_CN]: string;
 };
+
+const ZH_TW = {
+    shareAction: '分享此任務',
+    shareTitle: '分享任務',
+    shareDescription: '建立一次性邀請，讓另一台 Maka 存取這個任務。',
+    enableRemoteAccessTitle: '請先開啟本機遠端存取',
+    enableRemoteAccessBody: '已為你開啟 Runtime Host 設定；開啟遠端存取後即可分享此任務。',
+    disclosureTitle: '分享前請確認',
+    disclosureBody:
+      '對方將看到這個任務已有及之後產生的所有可見內容，包括其中已出現的檔案路徑、憑證或其他機密。撤銷存取只能阻止後續讀取，無法收回對方已複製的內容。',
+    accessLabel: '存取權限',
+    observe: '唯讀',
+    observeHelp: '檢視完整歷史記錄和即時更新',
+    requestTurn: '可請求新輪次',
+    revokeTurnRequests: '撤銷輪次請求權限',
+    requestTurnHelp: '檢視完整內容，並提出需要你逐次核准的新輪次請求',
+    createInvitation: '建立邀請',
+    invitationCode: '一次性邀請碼',
+    invitationHelp: '邀請碼包含連線位址和訪客憑證，不包含擁有者憑證。',
+    copy: '複製邀請碼',
+    copied: '已複製邀請碼',
+    close: '完成',
+    activeAccess: '目前存取',
+    accessUnavailable: '分享管理暫時無法使用；此視窗會自動重試。',
+    guest: '訪客',
+    noAccess: '尚未分享給任何人',
+    pending: '待領取',
+    active: '已連線',
+    revoke: '撤銷',
+    joinAction: '加入分享任務',
+    joinTitle: '加入分享任務',
+    joinDescription: '貼上邀請碼，建立獨立的訪客連線。',
+    code: '邀請碼',
+    join: '加入',
+    joining: '正在連線至分享任務…',
+    pairingPending: '連線已儲存，但最後的憑證確認遭到中斷。可在「設定 › 工作區」中重試或放棄這次配對。',
+    invalidCode: '邀請碼無效',
+    connectionFailed: '無法加入分享任務',
+    directPathUnavailable: '無法連線至任務所在的 Runtime Host。請確認目前 Desktop Client 和該 Host 位於同一個 Peer Mesh，且存在可用的直接連線或成員轉送路徑；可在 Peer Mesh 設定中同步路徑並檢查成員轉送。',
+    insecureTitle: '此連線未加密',
+    insecureBody: '訪客憑證、完整任務內容和輪次請求可能被同一網路中的第三方攔截。僅在你了解並接受風險時繼續。',
+    shareInsecure: '接受風險並建立',
+    joinInsecure: '接受風險並加入',
+    sharedBadge: '已分享',
+    turnRequests: '輪次請求',
+    noTurnRequests: '尚無輪次請求',
+    approve: '核准',
+    reject: '拒絕',
+    turnRequestPlaceholder: '描述你希望發起的新輪次',
+    submitTurnRequest: '請求新輪次',
+    turnRequestSent: '請求已送出，等待擁有者核准',
+    turnRequestReconciling: '正在確認 Host 是否已收到請求…',
+    turnRequestPending: '等待核准',
+    turnRequestApproved: '已核准',
+    turnRequestRejected: '已拒絕',
+    turnRequestStarted: '已開始',
+    turnRequestBlocked: '無法開始',
+    turnRequestFailed: '准入失敗',
+    dismissTurnRequest: '關閉',
+} satisfies SessionCollaborationCopy;
 
 const EN = {
     shareAction: 'Share this task',
@@ -144,7 +204,7 @@ const EN = {
     dismissTurnRequest: 'Dismiss',
 } satisfies SessionCollaborationCopy;
 
-const COPY = { zh: ZH, en: EN } satisfies UiCatalog<SessionCollaborationCopy>;
+const COPY = { 'zh-CN': ZH_CN, 'zh-TW': ZH_TW, en: EN } satisfies UiCatalog<SessionCollaborationCopy>;
 
 export function getSessionCollaborationCopy(locale: UiLocale) {
   return COPY[locale];

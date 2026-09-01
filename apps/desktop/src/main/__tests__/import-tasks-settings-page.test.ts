@@ -136,7 +136,7 @@ describe('ImportTasksSettingsPage durable import state', () => {
 
   it('renders durable repeat-import state in Chinese', async () => {
     const harness = await renderPage({
-      locale: 'zh',
+      locale: 'zh-CN',
       catalog: catalog(
         externalSession({
           importState: {
@@ -1205,7 +1205,7 @@ async function renderPage(options: {
     | { ok: false; reason: 'commit_outcome_unknown' }
     | Promise<{ ok: false; reason: 'commit_outcome_unknown' }>;
   onOpenImported?: (sessionId: string) => void;
-  locale?: 'en' | 'zh';
+  locale?: 'en' | 'zh-CN';
 }): Promise<{
   container: HTMLElement;
   root: Root;

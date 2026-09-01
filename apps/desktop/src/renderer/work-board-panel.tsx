@@ -22,6 +22,7 @@ import { Banner, EmptyState, Spinner } from '@astryxdesign/core';
 import { Button } from '@astryxdesign/core/Button';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { useUiLocale } from '@maka/ui';
+import { generalizedErrorMessageForLocale } from '@maka/core/redaction';
 import type {
   CreateWorkBoardItemInput,
   WorkBoardItem,
@@ -139,7 +140,10 @@ export function WorkBoardPanel(props: {
   projectId: string | null;
   projectAliases?: readonly string[];
 }) {
-  const copy = getDesktopConversationCopy(useUiLocale()).workBoardPanel;
+  const locale = useUiLocale();
+  const copy = getDesktopConversationCopy(locale).workBoardPanel;
+  const localizedError = (message: string): string =>
+    generalizedErrorMessageForLocale(new Error(message), copy.loadFailed, locale);
   const [filter, setFilter] = useState<'inbox' | 'project'>('inbox');
   const projectScopeIds = useMemo(() => {
     if (props.projectId === null) return undefined;
@@ -233,7 +237,12 @@ export function WorkBoardPanel(props: {
       aria-label={filter === 'project' ? copy.project : copy.inbox}
     >
       {actionError && (
-        <Banner status="error" role="alert" className="maka-work-board-message" title={actionError} />
+        <Banner
+          status="error"
+          role="alert"
+          className="maka-work-board-message"
+          title={localizedError(actionError)}
+        />
       )}
       <div className="maka-work-board-filters">
         <Button
@@ -283,7 +292,7 @@ export function WorkBoardPanel(props: {
           role="alert"
           className="maka-work-board-message"
           title={copy.loadFailed}
-          description={board.error}
+          description={localizedError(board.error)}
           endContent={
             <Button size="sm" variant="ghost" label={copy.retry} onClick={board.retry} />
           }
@@ -296,7 +305,7 @@ export function WorkBoardPanel(props: {
               role="alert"
               className="maka-work-board-message"
               title={copy.loadFailed}
-              description={board.continuationError}
+              description={localizedError(board.continuationError)}
               endContent={
                 <Button
                   size="sm"

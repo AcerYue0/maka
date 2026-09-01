@@ -22,7 +22,8 @@ import test from 'node:test';
 import { getConversationCopy } from '../conversation-copy.js';
 
 test('labels the Chinese default thinking level as default', () => {
-  assert.equal(getConversationCopy('zh').model.defaultLevel, '默认');
+  assert.equal(getConversationCopy('zh-CN').model.defaultLevel, '默认');
+  assert.equal(getConversationCopy('zh-TW').model.defaultLevel, '預設');
 });
 
 /**
@@ -31,7 +32,8 @@ test('labels the Chinese default thinking level as default', () => {
  * five-digit second count that reads as a frozen hang (#3401).
  */
 test('providerRetryScheduled humanizes hour-scale delays in both locales', () => {
-  const zh = getConversationCopy('zh').messages.providerRetryScheduled;
+  const zh = getConversationCopy('zh-CN').messages.providerRetryScheduled;
+  const zhTw = getConversationCopy('zh-TW').messages.providerRetryScheduled;
   const en = getConversationCopy('en').messages.providerRetryScheduled;
 
   // Sub-second and zero inputs still read as one second (never "0秒后重试").
@@ -48,6 +50,7 @@ test('providerRetryScheduled humanizes hour-scale delays in both locales', () =>
   assert.equal(zh(75, 2, 10), '1分 15秒后重试（2/10）');
   assert.equal(en(75, 2, 10), 'Retrying in 1m 15s (2/10)');
   assert.equal(zh(16_083, 2, 10), '4小时 28分 3秒后重试（2/10）');
+  assert.equal(zhTw(16_083, 2, 10), '4小時 28分 3秒後重試（2/10）');
   assert.equal(en(16_083, 2, 10), 'Retrying in 4h 28m 3s (2/10)');
   assert.equal(zh(90_061, 2, 10), '1天 1小时 1分 1秒后重试（2/10）');
   assert.equal(en(90_061, 2, 10), 'Retrying in 1d 1h 1m 1s (2/10)');

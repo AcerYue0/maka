@@ -119,7 +119,7 @@ function createHarness(options: {
   });
 
   const actions = createAppShellSessionSettingsActions({
-    uiLocale: 'zh',
+    uiLocale: 'zh-CN',
     activeIdRef,
     connections: options.connections ?? ([{ slug: 'e2e', name: 'E2E' }] as LlmConnection[]),
     messages: options.messages ?? [],

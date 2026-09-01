@@ -56,7 +56,7 @@ describe('MCP management overlay', () => {
 
   test('states the remote limitation instead of implying an empty local config', () => {
     const overlay = new McpManagementOverlay({
-      locale: 'zh',
+      locale: 'zh-CN',
       viewportRows: () => 6,
       onClose: () => undefined,
       onChange: () => undefined,
@@ -70,7 +70,7 @@ describe('MCP management overlay', () => {
 
   test('localizes manager states without changing their source values', () => {
     const overlay = new McpManagementOverlay({
-      locale: 'zh',
+      locale: 'zh-CN',
       surface: surface({
         initialization: 'ready',
         configuration: 'ready',
@@ -95,6 +95,39 @@ describe('MCP management overlay', () => {
     const text = overlay.render(100).map(stripAnsi).join('\n');
     assert.match(text, /oauth  需要登录 · streamable-http/u);
     assert.doesNotMatch(text, /needs-auth/u);
+  });
+
+  test('renders Traditional Chinese without Simplified fallbacks', () => {
+    const overlay = new McpManagementOverlay({
+      locale: 'zh-TW',
+      surface: surface({
+        initialization: 'ready',
+        configuration: 'ready',
+        publication: 'not_published',
+        toolCount: 0,
+        servers: [
+          {
+            serverId: 'oauth',
+            configured: true,
+            synchronized: true,
+            state: 'disconnected',
+            transport: 'streamable-http',
+            toolCount: 0,
+            error: '连接失败。',
+          },
+        ],
+      }),
+      viewportRows: () => 7,
+      onClose: () => undefined,
+      onChange: () => undefined,
+    });
+
+    const text = overlay.render(100).map(stripAnsi).join('\n');
+    assert.match(text, /MCP 伺服器/u);
+    assert.match(text, /未發佈 · 0 個工具/u);
+    assert.match(text, /oauth  未連線/u);
+    assert.match(text, /MCP 伺服器連線失敗/u);
+    assert.doesNotMatch(text, /连接|发布/u);
   });
 
   test('subscribes only for the overlay lifetime', () => {

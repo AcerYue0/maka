@@ -173,7 +173,7 @@ async function seedE2eConnection(userDataDir: string): Promise<void> {
   }
 }
 
-async function seedE2eLocale(userDataDir: string, locale: 'zh' | 'en'): Promise<void> {
+async function seedE2eLocale(userDataDir: string, locale: 'zh-CN' | 'zh-TW' | 'en'): Promise<void> {
   const workspaceRoot = path.join(userDataDir, 'workspaces', 'default');
   await createSettingsStore(workspaceRoot).update({
     personalization: { uiLocale: locale },
@@ -397,7 +397,7 @@ async function withE2eWindow(
     seed: boolean;
     readinessSelector: string;
     e2eFixtureScenario?: string;
-    locale?: 'zh' | 'en';
+    locale?: 'zh-CN' | 'zh-TW' | 'en';
     /** Opt this window back into animated scrolling; see `scroll-motion-policy`. */
     scrollMotion?: 'auto' | 'smooth';
     /** #1312: force app:info's platform so the window boots natively into that platform's `data-os` cascade. */
@@ -504,13 +504,13 @@ export const test = base.extend<{
 }>({
   // Seeded: a pre-staged connection clears onboarding so the composer is ready.
   window: async ({}, use) => {
-    await withE2eWindow({ seed: true, readinessSelector: COMPOSER_INPUT, locale: 'zh' }, use);
+    await withE2eWindow({ seed: true, readinessSelector: COMPOSER_INPUT, locale: 'zh-CN' }, use);
   },
   onboardingWindow: async ({}, use) => {
     await withE2eWindow({
       seed: false,
       readinessSelector: '[data-maka-contract="onboarding-card"]',
-      locale: 'zh',
+      locale: 'zh-CN',
       showWindow: true,
     }, use);
   },
@@ -519,7 +519,7 @@ export const test = base.extend<{
       {
         seed: true,
         readinessSelector: COMPOSER_INPUT,
-        locale: 'zh',
+        locale: 'zh-CN',
         gitReviewExtraFiles: 0,
       },
       async (page, context) => {
@@ -535,7 +535,7 @@ export const test = base.extend<{
     await withE2eWindow({
       seed: true,
       readinessSelector: COMPOSER_INPUT,
-      locale: 'zh',
+      locale: 'zh-CN',
       invocableSkills: true,
     }, use);
   },
@@ -554,7 +554,7 @@ export const test = base.extend<{
     await withE2eWindow({
       seed: true,
       readinessSelector: COMPOSER_INPUT,
-      locale: 'zh',
+      locale: 'zh-CN',
       newTaskProject: true,
       showWindow: true,
     }, use);
@@ -564,7 +564,7 @@ export const test = base.extend<{
       seed: false,
       readinessSelector: '[data-maka-contract="search-modal"][open]',
       e2eFixtureScenario: 'sidebar-search-modal-open',
-      locale: 'zh',
+      locale: 'zh-CN',
       showWindow: true,
     }, use);
   },
@@ -573,7 +573,7 @@ export const test = base.extend<{
       {
         seed: true,
         readinessSelector: COMPOSER_INPUT,
-        locale: 'zh',
+        locale: 'zh-CN',
         parentRemovalSessions: true,
       },
       use,
@@ -584,7 +584,7 @@ export const test = base.extend<{
       {
         seed: true,
         readinessSelector: COMPOSER_INPUT,
-        locale: 'zh',
+        locale: 'zh-CN',
         railRenderSessions: true,
       },
       use,
@@ -611,7 +611,7 @@ export const test = base.extend<{
       seed: false,
       readinessSelector: '[data-turn-id]',
       e2eFixtureScenario: 'chat-partial-history',
-      locale: 'zh',
+      locale: 'zh-CN',
       showWindow: true,
     }, use);
   },
@@ -637,7 +637,7 @@ export const test = base.extend<{
       seed: false,
       readinessSelector: '.settingsSurface',
       e2eFixtureScenario: 'settings-models',
-      locale: 'zh',
+      locale: 'zh-CN',
       showWindow: true,
     }, use);
   },

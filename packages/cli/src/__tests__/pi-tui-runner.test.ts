@@ -249,7 +249,7 @@ describe('Maka Pi TUI runner', () => {
     const driver = new SlashCommandDriver();
     const run = runMakaPiTui({
       title: 'Maka',
-      locale: 'zh',
+      locale: 'zh-CN',
       driver,
       cwd: '/repo',
       model: 'claude-sonnet-4-5',
@@ -328,7 +328,7 @@ describe('Maka Pi TUI runner', () => {
     const driver = new UserCommandDriver();
     const run = runMakaPiTui({
       title: 'Maka',
-      locale: 'zh',
+      locale: 'zh-CN',
       driver,
       cwd: '/repo',
       model: 'claude-sonnet-4-5',
@@ -795,7 +795,7 @@ describe('Maka Pi TUI runner', () => {
       model: 'claude-sonnet-4-5',
       connectionSlug: 'claude-subscription',
       permissionMode: 'bypass',
-      locale: 'zh',
+      locale: 'zh-CN',
       terminal,
       onboarding: fakeOnboardingSurface({
         verify: async (input) => {
@@ -862,7 +862,7 @@ describe('Maka Pi TUI runner', () => {
       model: 'claude-sonnet-4-5',
       connectionSlug: 'claude-subscription',
       permissionMode: 'bypass',
-      locale: 'zh',
+      locale: 'zh-CN',
       terminal,
       onboarding: fakeOnboardingSurface({
         save: async () => {
@@ -3661,7 +3661,7 @@ describe('Maka Pi TUI runner', () => {
       connectionSlug: 'openai',
       providerType: 'openai',
       permissionMode: 'ask',
-      locale: 'zh',
+      locale: 'zh-CN',
       terminal,
     });
 
@@ -7502,7 +7502,7 @@ describe('Maka Pi TUI runner', () => {
       model: 'claude-sonnet-4-5',
       connectionSlug: 'claude-subscription',
       permissionMode: 'ask',
-      locale: 'zh',
+      locale: 'zh-CN',
       terminal,
     });
 

@@ -68,7 +68,8 @@ const syntheticComponentStack: ErrorInfo = {
   ].join('\n'),
 };
 
-const resolveLocale = (globals: Record<string, unknown>) => (globals.locale === 'en' ? 'en' : 'zh');
+const resolveLocale = (globals: Record<string, unknown>) =>
+  globals.locale === 'en' ? 'en' : globals.locale === 'zh-TW' ? 'zh-TW' : 'zh-CN';
 
 function fallback(copyState: ErrorBoundaryCopyState, error: Error, errorInfo: ErrorInfo) {
   return (_args: unknown, { globals }: { globals: Record<string, unknown> }) => (
