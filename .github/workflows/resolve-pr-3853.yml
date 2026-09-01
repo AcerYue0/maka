@@ -39,11 +39,31 @@ jobs:
 
           git checkout --detach "${base_sha}"
           if ! git cherry-pick -Xtheirs "${feature_sha}"; then
-            echo "CHERRY_PICK_CONFLICTS_BEGIN"
-            git status --short
-            git diff --name-only --diff-filter=U
-            echo "CHERRY_PICK_CONFLICTS_END"
-            exit 2
+            conflict_path='apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-tasks.ts'
+            replacement_path='apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts'
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            if [[ "${conflicts}" != "${conflict_path}" ]]; then
+              echo "Unexpected conflicts:"
+              printf '%s\n' "${conflicts}"
+              exit 2
+            fi
+
+            git rm "${conflict_path}"
+            python <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/desktop/src/renderer/features/workbar/tools/tasks/use-session-todo.ts')
+          text = path.read_text()
+          old_import = "import { generalizedErrorMessage, generalizedErrorMessageChinese } from '@maka/core/redaction';"
+          new_import = "import { generalizedErrorMessageForLocale } from '@maka/core/redaction';"
+          old_error = """          error:\n            copy.locale === 'zh'\n              ? generalizedErrorMessageChinese(error, copy.loadFailed)\n              : generalizedErrorMessage(error, copy.loadFailed),"""
+          new_error = """          error: generalizedErrorMessageForLocale(error, copy.loadFailed, copy.locale),"""
+          if old_import not in text or old_error not in text:
+              raise SystemExit('Expected upstream todo locale fallback was not found')
+          path.write_text(text.replace(old_import, new_import).replace(old_error, new_error))
+          PY
+            git add "${replacement_path}"
+            GIT_EDITOR=true git cherry-pick --continue
           fi
 
           git diff --check "${base_sha}"...HEAD
