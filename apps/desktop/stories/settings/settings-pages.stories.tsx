@@ -1852,7 +1852,7 @@ export const GeneralCachedRevalidation: Story = {
     await expect(
       canvas.getByRole('switch', { name: '完成时发送系统通知' }),
     ).toBeEnabled();
-    await expect(canvas.getByRole('radio', { name: '中文' })).toBeEnabled();
+    await expect(canvas.getByRole('combobox', { name: '界面语言' })).toBeEnabled();
     const mixedBoundary = canvasElement.querySelector<HTMLElement>(
       '.settingsRuntimeHostInteractionBoundary',
     );
@@ -1909,7 +1909,7 @@ export const GeneralHostGenerationRevalidation: Story = {
     await expect(
       canvas.getByRole('switch', { name: '完成时发送系统通知' }),
     ).toBeEnabled();
-    await expect(canvas.getByRole('radio', { name: '中文' })).toBeEnabled();
+    await expect(canvas.getByRole('combobox', { name: '界面语言' })).toBeEnabled();
     const mixedBoundary = canvasElement.querySelector<HTMLElement>(
       '.settingsRuntimeHostInteractionBoundary',
     );
@@ -1974,7 +1974,7 @@ export const GeneralBackgroundHostReconnectThenSelect: Story = {
     await expect(
       canvas.getByRole('switch', { name: '完成时发送系统通知' }),
     ).toBeEnabled();
-    await expect(canvas.getByRole('radio', { name: '中文' })).toBeEnabled();
+    await expect(canvas.getByRole('combobox', { name: '界面语言' })).toBeEnabled();
   },
 };
 // Error is a real signal rather than a loading state. Desktop-owned controls
