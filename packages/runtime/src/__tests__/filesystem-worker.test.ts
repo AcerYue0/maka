@@ -474,7 +474,15 @@ describe('filesystem worker operations', () => {
       ),
     );
     assert.equal(textResponse.ok, true);
-    if (textResponse.ok) assert.deepEqual(textResponse.result, { kind: 'read', content: 'notes' });
+    if (textResponse.ok)
+      assert.deepEqual(textResponse.result, {
+        kind: 'read',
+        content: 'notes',
+        offset: 0,
+        returnedLines: 1,
+        totalLines: 1,
+        next: null,
+      });
   });
 
   test('reads and writes only the canonical path capability in the request', async () => {
@@ -491,7 +499,15 @@ describe('filesystem worker operations', () => {
       ),
     );
     assert.equal(readResponse.ok, true);
-    if (readResponse.ok) assert.deepEqual(readResponse.result, { kind: 'read', content: 'inside' });
+    if (readResponse.ok)
+      assert.deepEqual(readResponse.result, {
+        kind: 'read',
+        content: 'inside',
+        offset: 0,
+        returnedLines: 1,
+        totalLines: 1,
+        next: null,
+      });
 
     const denied = await executeFilesystemWorkerRequest(
       await requestFor(

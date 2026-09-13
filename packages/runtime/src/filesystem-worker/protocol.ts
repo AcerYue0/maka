@@ -18,12 +18,13 @@
  */
 
 import { z } from 'zod';
+import { readContinuationSchema, readPageSchema } from '../read-page.js';
 import { validateSandboxBoundaryExpansion } from '@maka/core/sandbox-boundary';
 import { GREP_MAX_LINES, GREP_MAX_LINES_PER_FILE, GREP_MAX_MATCH_BYTES } from '../grep-search.js';
 
-// v9 requires exact Grep counts alongside bounded matches. Older workers must
-// not be accepted as successful searches with missing completeness metadata.
-export const FILESYSTEM_WORKER_PROTOCOL_VERSION = 9 as const;
+// v10 adds bounded Read pages to v9's exact Grep counts. Older workers cannot
+// satisfy the combined result contract and must be rejected at the handshake.
+export const FILESYSTEM_WORKER_PROTOCOL_VERSION = 10 as const;
 
 /** The single authority on which operation kinds are writes. Shared by the
  * client (permission/identity decisions) and the worker (operation guards) so
@@ -107,6 +108,7 @@ export const FilesystemWorkerOperationSchema = z.union([
       path,
       offset: z.number().int().nonnegative().optional(),
       limit: z.number().int().positive().optional(),
+      continuation: readContinuationSchema.optional(),
     })
     .strict(),
   z.object({ kind: z.literal('write'), cwd, path, content: z.string() }).strict(),
@@ -171,7 +173,7 @@ export const FilesystemWorkerRequestSchema = z
   .strict();
 
 export const FilesystemWorkerResultSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('read'), content: z.string() }).strict(),
+  readPageSchema.extend({ kind: z.literal('read') }).strict(),
   z
     .object({
       kind: z.literal('read_image'),
