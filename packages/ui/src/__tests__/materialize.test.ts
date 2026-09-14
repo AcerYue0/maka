@@ -207,6 +207,22 @@ describe("steering timeline", () => {
 });
 
 describe("materializeChat message metadata", () => {
+  test("renders neutral provider dropping guidance for new and legacy records", () => {
+    const base = {
+      type: "system_note" as const,
+      id: "drop",
+      turnId: "t1",
+      ts: 1,
+      kind: "context_provider_dropping" as const,
+      data: { inputTokens: 98_247, priorInputTokens: 124_832 },
+    };
+    const current = materializeChat([base], "en")[0]?.text;
+    const legacy = materializeChat([{ ...base, data: undefined }], "en")[0]?.text;
+    assert.match(current ?? "", /may have been truncated or rewritten/);
+    assert.match(legacy ?? "", /may have been truncated or rewritten/);
+    assert.doesNotMatch(current ?? "", /Declare a context window|compact first/);
+  });
+
   test("localizes visible system notes", () => {
     const messages: StoredMessage[] = [
       {
