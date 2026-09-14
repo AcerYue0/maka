@@ -91,6 +91,8 @@ import { PluginAttachmentService } from '@maka/runtime/plugin-attachment-service
 import { PluginApprovalService } from '@maka/runtime/plugin-approval-service';
 import { PluginFilesystemService } from '@maka/runtime/plugin-fs-service';
 import { PluginLlmService } from '@maka/runtime/plugin-llm-service';
+import { PluginExecutorBackend } from '@maka/runtime/plugin-executor-backend';
+import { PluginExecutorService } from '@maka/runtime/plugin-executor-service';
 import { PluginShellService } from '@maka/runtime/plugin-shell-service';
 import { PluginUserQuestionService } from '@maka/runtime/plugin-user-question-service';
 import { PluginWebService } from '@maka/runtime/plugin-web-service';
@@ -336,6 +338,7 @@ export async function createExecutionRuntimeHostComposition(
   let goalExecutions: HostGoalExecutionCoordinator | undefined;
   let pluginPlatform: HostPluginPlatform | undefined;
   let manager: SessionManager | undefined;
+  let invalidatePluginExecutorBackends: () => void = () => undefined;
   let modelMetadataRefresh: ReturnType<typeof startHostModelMetadataRefresh> | undefined;
   let archiveEvidence: Awaited<ReturnType<typeof openToolResultArchiveEvidenceReader>> | undefined;
   try {
@@ -346,6 +349,11 @@ export async function createExecutionRuntimeHostComposition(
     new PluginUserQuestionService(pluginRoot, pluginAgents);
     const pluginFilesystem = new PluginFilesystemService(pluginRoot, pluginAgents);
     const pluginLlm = new PluginLlmService(pluginRoot, pluginAgents);
+    const pluginExecutors = new PluginExecutorService(pluginRoot, {
+      // Retirement aborts its generation before backend disposal begins, so the
+      // terminal event preserves executor-retired instead of looking like Stop.
+      onChanged: () => queueMicrotask(invalidatePluginExecutorBackends),
+    });
     const pluginShellEnv = new PluginShellEnvService(pluginRoot);
     const pluginShell = new PluginShellService(pluginRoot, pluginAgents, pluginShellEnv);
     const pluginWeb = new PluginWebService(pluginRoot, pluginAgents);
@@ -369,6 +377,7 @@ export async function createExecutionRuntimeHostComposition(
       tools: pluginTools,
       systemPrompt: pluginSystemPrompt,
       commands: pluginCommands,
+      executors: pluginExecutors,
     });
     const pluginPlatformCoordinator = new HostPluginPlatformCoordinator(pluginPlatform);
     const openedProjectCatalog = storage.projectCatalog;
@@ -1055,6 +1064,23 @@ export async function createExecutionRuntimeHostComposition(
         prepare: (backendContext) => prepareHostAiSdkBackend(hostAiSdkBackendInput(backendContext)),
       },
     );
+    backends.register('plugin-executor', {
+      prepare: async (backendContext) => {
+        const executorId = backendContext.header.executorId;
+        if (!executorId) throw new Error('Plugin executor Session is missing its executor id');
+        const binding = pluginExecutors.bind(backendContext.sessionId, executorId);
+        return {
+          providerStateIdentity: binding.providerStateIdentity,
+          build: (factoryContext) =>
+            new PluginExecutorBackend({
+              sessionId: factoryContext.sessionId,
+              cwd: factoryContext.header.cwd,
+              ...(factoryContext.systemPrompt ? { instructions: factoryContext.systemPrompt } : {}),
+              binding,
+            }),
+        };
+      },
+    });
     const runtimeAuthority: RuntimeHostedRootAuthority = {
       bindRun: (identity) => messages.bindRun(identity),
       executeRoot: (input) =>
@@ -1108,6 +1134,7 @@ export async function createExecutionRuntimeHostComposition(
     };
     resolveAvailableToolNames = async (sessionId: string): Promise<string[]> => {
       const header = await stores.sessionStore.readHeaderSnapshot(sessionId);
+      if (header.backend === 'plugin-executor') return [];
       if (header.subagentRuntime) {
         if (!header.subagentParent) {
           throw new Error('Subagent runtime snapshot requires a linked child session');
@@ -1300,6 +1327,14 @@ export async function createExecutionRuntimeHostComposition(
       toolBoundaryProtocol: stores.runtimeEventStore.toolBoundaryProtocol,
       backends,
       subagentCatalog,
+      assertChildExecutorAvailable: (parentSessionId, executorId) => {
+        const identity = pluginExecutors.identity(parentSessionId, executorId);
+        if (identity.scopeId !== 'profile') {
+          throw new Error(
+            `Session-scoped executor cannot be inherited by a child Session: ${executorId}`,
+          );
+        }
+      },
       newId: randomUUID,
       now: Date.now,
       safeBoundaryResumeEnabled: process.env.MAKA_RUNTIME_SAFE_BOUNDARY_RESUME === '1',
@@ -1401,6 +1436,7 @@ export async function createExecutionRuntimeHostComposition(
     const registerBackendInvalidation = (): void => {
       observeBackendInvalidation(requireSessionManager(manager).refreshIdleBackends());
     };
+    invalidatePluginExecutorBackends = registerBackendInvalidation;
     const registerConfigurationMutation = (): void => {
       hostChanges.publishConfiguration();
       registerBackendInvalidation();
@@ -1684,6 +1720,7 @@ export async function createExecutionRuntimeHostComposition(
         return new Promise((resolve, reject) => {
           void spawn({
             agentProfile: options.agentProfile ?? 'implementation',
+            ...(options.executorId ? { executorId: options.executorId } : {}),
             prompt: options.prompt!,
             ...(options.signal ? { abortSignal: options.signal } : {}),
             onReady: (ready) =>
@@ -1940,6 +1977,9 @@ export async function createExecutionRuntimeHostComposition(
       continuity: continuityCoordinator,
       workspaceResolver,
       requestDrain: context.requestDrain,
+      assertExecutorAvailable: (sessionId, executorId) => {
+        pluginExecutors.identity(sessionId, executorId);
+      },
       ...(context.sessionAccessAuthority
         ? { sessionAccessAuthority: context.sessionAccessAuthority }
         : {}),
@@ -2135,14 +2175,18 @@ export async function createExecutionRuntimeHostComposition(
                   sessionId: input.targetSessionId,
                   workspace: input.create.workspace,
                   name: input.create.title,
-                  modelTarget: input.create.defaults?.model
-                    ? {
-                        kind: 'explicit',
-                        connectionId: input.create.defaults.model.llmConnectionId,
-                        connectionSlug: input.create.defaults.model.llmConnectionSlug,
-                        model: input.create.defaults.model.model,
-                      }
-                    : { kind: 'default' },
+                  ...(input.create.defaults?.executorId
+                    ? { executorId: input.create.defaults.executorId }
+                    : {
+                        modelTarget: input.create.defaults?.model
+                          ? {
+                              kind: 'explicit' as const,
+                              connectionId: input.create.defaults.model.llmConnectionId,
+                              connectionSlug: input.create.defaults.model.llmConnectionSlug,
+                              model: input.create.defaults.model.model,
+                            }
+                          : ({ kind: 'default' } as const),
+                      }),
                   ...(input.create.defaults?.permissionMode
                     ? { permissionMode: input.create.defaults.permissionMode }
                     : {}),
