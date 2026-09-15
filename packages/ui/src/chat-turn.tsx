@@ -840,8 +840,8 @@ type ConversationSegment =
        * What this answer replies to: the steering message that opened it, or
        * the turn itself for the first answer. This is the segment's identity —
        * its React key must not be derived from its contents, because those
-       * change as the turn runs (a Processing fold dissolves once its last
-       * tools group is projected away) and a changing key remounts the whole
+       * change as the turn runs (a tools-only sequence disappears when its
+       * tools are projected away) and a changing key remounts the whole
        * answer, costing the user their scroll position, any disclosure they
        * had open, and any text Selection held inside it.
        *
