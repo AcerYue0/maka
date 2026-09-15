@@ -231,13 +231,13 @@ const defaultOwnedDependencies: ConnectOwnedRuntimeHostDependencies = {
 };
 
 export async function connectOwnedRuntimeHost(
-  input: Omit<ConnectOrSpawnRuntimeHostInput, 'candidateEntrypoint'>,
+  input: OwnedRuntimeHostInput,
 ): Promise<ConnectOwnedRuntimeHostResult> {
   return connectOwnedRuntimeHostWithDependencies(input, defaultOwnedDependencies);
 }
 
 export async function connectOwnedRuntimeHostWithDependencies(
-  input: Omit<ConnectOrSpawnRuntimeHostInput, 'candidateEntrypoint'>,
+  input: OwnedRuntimeHostInput,
   dependencies: ConnectOwnedRuntimeHostDependencies,
 ): Promise<ConnectOwnedRuntimeHostResult> {
   let launch: ReturnType<typeof launchOwnedRuntimeHostCandidate> | undefined;
@@ -253,6 +253,12 @@ export async function connectOwnedRuntimeHostWithDependencies(
           launch ??= dependencies.launchCandidate({
             ...candidate,
             idleGraceMs: 0,
+            // Proxy passwords belong in the child environment, never process arguments.
+            env: {
+              MAKA_HOSTED_INITIALIZATION: input.initialization
+                ? JSON.stringify(input.initialization)
+                : '',
+            },
           });
           return launch;
         },
@@ -301,6 +307,15 @@ export async function connectOwnedRuntimeHostWithDependencies(
     };
   }
 }
+
+export interface HostedRuntimeInitialization {
+  readonly incognito: true;
+  readonly proxyUrl?: string;
+}
+
+type OwnedRuntimeHostInput = Omit<ConnectOrSpawnRuntimeHostInput, 'candidateEntrypoint'> & {
+  readonly initialization?: HostedRuntimeInitialization;
+};
 
 function releaseOwnedLaunch(
   launch: ReturnType<typeof launchOwnedRuntimeHostCandidate> | undefined,
