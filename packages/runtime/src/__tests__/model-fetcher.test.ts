@@ -311,7 +311,7 @@ describe('model discovery', () => {
     );
     assert.equal(repeatedRequests, 2);
   });
-  
+
   test('Meta discovery keeps Muse Spark chat models and excludes image and voice models', async () => {
     const requests: Array<{ url: string; authorization: string | undefined }> = [];
     const server = await startJsonServer((request, response) => {
@@ -365,7 +365,7 @@ describe('model discovery', () => {
     assert.deepEqual(
       buildModelCatalogEntries({
         providerType: 'meta',
-        models,
+        models: [...models],
         modelSource: 'fetched',
       }).map(({ id, canUseAsChatDefault }) => ({ id, canUseAsChatDefault })),
       [
