@@ -124,6 +124,7 @@ import { createExternalSessionAdapterRegistry } from '@maka/storage/external-ses
 import { createGitWorktreeChildExecutor } from '@maka/storage/git-worktree-child-executor';
 import { runWithStorageRootLease } from '@maka/storage/root-authority';
 import { createInteractiveContextOffloadReader } from '@maka/storage/context-offload-store';
+import { observeInteractivePlanStoreWriter } from '@maka/storage/plan-authority';
 import { openStorageWriterComposition } from '@maka/storage/storage-writer-composition';
 import type { RuntimePolicyStoresWriter } from '@maka/storage/runtime-policy-stores';
 import { resolveWorkspaceIdentity } from '@maka/storage/workspace-identity';
@@ -881,6 +882,11 @@ export async function createExecutionRuntimeHostComposition(
       context.sessionAccessAuthority,
     );
     const continuityCoordinator = continuity;
+    const planStore = observeInteractivePlanStoreWriter(
+      openedPlanStore,
+      (sessionId) => continuityCoordinator.enqueueSessionDomainChanged(sessionId, 'plan'),
+      context.requestDrain,
+    );
     unsubscribeTranscriptChanges = stores.sessionStore.subscribeTranscriptChanges((sessionId) =>
       continuityCoordinator.enqueueCanonicalRefresh(sessionId),
     );
@@ -1009,7 +1015,7 @@ export async function createExecutionRuntimeHostComposition(
         resolveTavilyWebSearchReadiness: () =>
           resolveHostTavilyWebSearchReadiness(runtimePolicyStores.operations),
         ...(scheduledTaskTool ? { scheduledTaskTool } : {}),
-        planStore: openedPlanStore,
+        planStore,
         deepResearchTools: requireDeepResearch(deepResearch).toolsForSession(
           backendContext.sessionId,
         ),
@@ -1172,7 +1178,7 @@ export async function createExecutionRuntimeHostComposition(
       try {
         const [graphTools, planState] = await Promise.all([
           requireGraphCoordinator(graphCoordinator).toolsForSession(sessionId),
-          openedPlanStore.readState(sessionId),
+          planStore.readState(sessionId),
         ]);
         const { runtimePolicy, surface } = await resolveInteractiveToolSurface({
           connectionRef: sessionExecutionConnectionRef(header),
@@ -1196,7 +1202,7 @@ export async function createExecutionRuntimeHostComposition(
           goalTools: requireGoal(goal).tools,
           ...(surface.parentAgentTools ? { parentAgentTools: surface.parentAgentTools } : {}),
           plan: {
-            store: openedPlanStore,
+            store: planStore,
             state: planState,
             mode: header.collaborationMode ?? 'agent',
             permissionMode: header.permissionMode,
@@ -1260,7 +1266,7 @@ export async function createExecutionRuntimeHostComposition(
             goalTools: requireGoal(goal).tools,
             ...(surface.parentAgentTools ? { parentAgentTools: surface.parentAgentTools } : {}),
             plan: {
-              store: openedPlanStore,
+              store: planStore,
               state: emptyPlanSessionState(previewSessionId),
               mode: collaborationMode,
               permissionMode,
@@ -1397,7 +1403,7 @@ export async function createExecutionRuntimeHostComposition(
       interactionAuthority: interactions,
       canonicalPermissionOutcomes,
       shellRuns,
-      planStore: openedPlanStore,
+      planStore,
       resolveChildTools,
       worktreeChildExecutor,
       listArtifactsForTurn: (sessionId, turnId) =>
@@ -2400,15 +2406,13 @@ export async function createExecutionRuntimeHostComposition(
       requestDrain: context.requestDrain,
     });
     const plans = new HostPlanCoordinator({
-      store: openedPlanStore,
+      store: planStore,
       sessions: stores.sessionStore,
       runtime: manager,
       sessionAdmission,
       isSessionActive: (sessionId) => coordinator.readRootState(sessionId).kind !== 'idle',
       refreshContinuity: (sessionId, lease) =>
         continuityCoordinator.refreshCanonical(sessionId, lease),
-      onProjectionChanged: (sessionId) =>
-        continuityCoordinator.enqueueSessionDomainChanged(sessionId, 'plan'),
       requestDrain: context.requestDrain,
       root: coordinator,
     });
@@ -2445,6 +2449,9 @@ export async function createExecutionRuntimeHostComposition(
       ...(contextOffloadAuthority ? { contextOffload: contextOffloadAuthority } : {}),
       purgeOperationalState: async (sessionId) => {
         await stores.purgeConversationOperationalState(sessionId);
+        // Session retirement deletes the whole projection, so it purges the raw
+        // writer: publishing a per-Session `plan` invalidation for state that is
+        // being removed would only wake subscribers to read nothing.
         await openedPlanStore.purgeSessionState(sessionId);
         await openedDeepResearchStore.purgeSessionState(sessionId);
       },
