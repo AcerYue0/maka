@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { after, describe, test } from 'node:test';
 import type { LlmConnection } from '@maka/core/llm-connections';
+import { buildModelCatalogEntries } from '@maka/core/model-catalog';
 import {
   fetchProviderModels,
   ProviderModelDiscoveryHttpError,
@@ -254,6 +255,72 @@ describe('fetchProviderModels', () => {
         'expired-xai-oauth-token',
       ),
       (error: unknown) => error instanceof ProviderModelDiscoveryHttpError && error.status === 401,
+    );
+  });
+
+  test('Meta discovery keeps Muse Spark chat models and excludes image and voice models', async () => {
+    const requests: Array<{ url: string; authorization: string | undefined }> = [];
+    const server = await startJsonServer((request, response) => {
+      requests.push({ url: request.url ?? '', authorization: request.headers.authorization });
+      respondJson(response, 200, {
+        object: 'list',
+        data: [
+          { id: 'muse-spark-1.3', object: 'model', created: 1, owned_by: 'meta' },
+          {
+            id: 'muse-spark-1.3-contributor',
+            object: 'model',
+            created: 1,
+            owned_by: 'meta',
+          },
+          { id: 'muse-spark-1.2', object: 'model', created: 1, owned_by: 'meta' },
+          { id: 'muse-image-1.0', object: 'model', created: 1, owned_by: 'meta' },
+          { id: 'muse-voice-transcribe-1.0', object: 'model', created: 1, owned_by: 'meta' },
+        ],
+      });
+    });
+    const models = await fetchProviderModels(
+      {
+        slug: 'meta',
+        name: 'Meta Model API',
+        providerType: 'meta',
+        baseUrl: `${server.url}/v1`,
+        defaultModel: 'muse-spark-1.3',
+        enabled: true,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+      'meta-api-key',
+    );
+
+    assert.deepEqual(requests, [{ url: '/v1/models', authorization: 'Bearer meta-api-key' }]);
+    assert.deepEqual(models, [
+      {
+        id: 'muse-spark-1.3',
+        apiProtocol: 'openai-responses',
+        capabilities: { chat: true },
+      },
+      {
+        id: 'muse-spark-1.3-contributor',
+        apiProtocol: 'openai-responses',
+        capabilities: { chat: true },
+      },
+      {
+        id: 'muse-spark-1.2',
+        apiProtocol: 'openai-responses',
+        capabilities: { chat: true },
+      },
+    ]);
+    assert.deepEqual(
+      buildModelCatalogEntries({
+        providerType: 'meta',
+        models,
+        modelSource: 'fetched',
+      }).map(({ id, canUseAsChatDefault }) => ({ id, canUseAsChatDefault })),
+      [
+        { id: 'muse-spark-1.3', canUseAsChatDefault: true },
+        { id: 'muse-spark-1.3-contributor', canUseAsChatDefault: true },
+        { id: 'muse-spark-1.2', canUseAsChatDefault: true },
+      ],
     );
   });
 

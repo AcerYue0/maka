@@ -699,10 +699,19 @@ async function fetchCohereModels(
  */
 function filterDiscoveredModels(
   models: ModelInfo[],
-  filter: 'language-models' | 'tool-capable' | undefined,
+  filter: 'language-models' | 'muse-spark' | 'tool-capable' | undefined,
 ): ModelInfo[] {
   if (filter === 'tool-capable') {
     return models.filter((model) => model.capabilities?.functionCalling === true);
+  }
+  if (filter === 'muse-spark') {
+    return models
+      .filter((model) => /^muse-spark-/i.test(model.id))
+      .map((model) => ({
+        ...model,
+        apiProtocol: 'openai-responses',
+        capabilities: { ...model.capabilities, chat: true },
+      }));
   }
   return models;
 }

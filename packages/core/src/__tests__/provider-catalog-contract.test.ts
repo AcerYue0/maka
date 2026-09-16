@@ -72,7 +72,7 @@ describe('Meta Model API provider', () => {
       name: 'provider',
       responses: { adapter: 'openai', reasoningReplay: 'encrypted-content' },
     });
-    assert.deepEqual(meta.modelDiscovery, { kind: 'protocol' });
+    assert.deepEqual(meta.modelDiscovery, { kind: 'protocol', filter: 'muse-spark' });
     assert.equal(meta.signupUrl, 'https://dev.meta.ai/');
   });
 });
