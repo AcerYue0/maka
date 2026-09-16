@@ -312,7 +312,7 @@ describe('model discovery', () => {
     assert.equal(repeatedRequests, 2);
   });
 
-  test('Meta discovery keeps Muse Spark chat models and excludes image and voice models', async () => {
+  test('Meta discovery keeps supported 1.3 chat models and excludes other model families', async () => {
     const requests: Array<{ url: string; authorization: string | undefined }> = [];
     const server = await startJsonServer((request, response) => {
       requests.push({ url: request.url ?? '', authorization: request.headers.authorization });
@@ -356,11 +356,6 @@ describe('model discovery', () => {
         apiProtocol: 'openai-responses',
         capabilities: { chat: true },
       },
-      {
-        id: 'muse-spark-1.2',
-        apiProtocol: 'openai-responses',
-        capabilities: { chat: true },
-      },
     ]);
     assert.deepEqual(
       buildModelCatalogEntries({
@@ -371,7 +366,6 @@ describe('model discovery', () => {
       [
         { id: 'muse-spark-1.3', canUseAsChatDefault: true },
         { id: 'muse-spark-1.3-contributor', canUseAsChatDefault: true },
-        { id: 'muse-spark-1.2', canUseAsChatDefault: true },
       ],
     );
   });

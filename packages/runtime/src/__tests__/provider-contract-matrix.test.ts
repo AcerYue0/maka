@@ -318,6 +318,7 @@ function discoveryPayload(
       object: 'list',
       data: [
         { id: sample, object: 'model', created: 1, owned_by: 'meta' },
+        { id: 'muse-spark-1.2', object: 'model', created: 1, owned_by: 'meta' },
         { id: 'muse-image-1.0', object: 'model', created: 1, owned_by: 'meta' },
         { id: 'muse-voice-transcribe-1.0', object: 'model', created: 1, owned_by: 'meta' },
       ],

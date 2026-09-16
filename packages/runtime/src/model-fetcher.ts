@@ -647,7 +647,7 @@ function filterDiscoveredModels(
   }
   if (filter === 'muse-spark') {
     return models
-      .filter((model) => /^muse-spark-/i.test(model.id))
+      .filter((model) => model.id === 'muse-spark-1.3' || model.id === 'muse-spark-1.3-contributor')
       .map((model) => ({
         ...model,
         apiProtocol: 'openai-responses',
