@@ -17,9 +17,9 @@
  * under the License.
  */
 
-import type { ComponentProps } from 'react';
-import { AppShell as LegacyAppShell } from '../app-shell';
-import { WorkHubRoot, WorkHubSurfaceSwitch } from '../features/workhub';
-export function AppShell(props: ComponentProps<typeof LegacyAppShell>) {
-  return <WorkHubSurfaceSwitch main={<LegacyAppShell {...props} />} workhub={<WorkHubRoot />} />;
+/** A flat, declarative menu. Actions remain in the requesting renderer. */
+export interface NativeMenuRequest {
+  x: number;
+  y: number;
+  items: readonly { id: string; label: string; checked: boolean; enabled: boolean }[];
 }

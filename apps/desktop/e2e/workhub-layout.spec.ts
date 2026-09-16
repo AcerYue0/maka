@@ -72,6 +72,33 @@ test('WorkHub uses its coordination model and shared attachment composer', async
   await expect.poll(() => page.evaluate(() => innerWidth)).toBe(restoredContentWidth);
   const restoredDockWidth = await page.locator('.workHubDock').evaluate((element) => Math.round(element.getBoundingClientRect().width));
   await expect.poll(() => workhub.evaluate(() => innerWidth)).toBe(restoredDockWidth);
+  // The edge belongs to the native conversation renderer. A Main DOM overlay
+  // would be covered by this WebContentsView and never receive native clicks.
+  await workhub.getByRole('button', { name: '展开任务工作栏', exact: true }).click();
+  await expect(page.locator('.maka-session-workbar[data-placement="right"]')).toBeVisible();
+  // A real native menu must coexist with the live sibling WebContentsView.
+  // DOM tests cannot detect replacing that view with a frozen screenshot.
+  await app.evaluate(({ Menu }) => {
+    const original = Menu.prototype.popup;
+    Menu.prototype.popup = function (options) {
+      (globalThis as unknown as { workbarMenu: Electron.Menu }).workbarMenu = this;
+      Menu.prototype.popup = original;
+      return original.call(this, options);
+    };
+  });
+  const addPanel = page.getByRole('button', { name: '添加面板', exact: true });
+  await addPanel.click();
+  await expect(addPanel).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.workHubDockBackdrop')).toHaveCount(0);
+  expect(await mainWindow.evaluate(win => {
+    const container = win.contentView.children.find(view => view.children.some(child =>
+      'webContents' in child && (child as Electron.WebContentsView).webContents.getURL().includes('surface=workhub')));
+    return container?.getVisible();
+  })).toBe(true);
+  await app.evaluate(() => (globalThis as unknown as { workbarMenu: Electron.Menu }).workbarMenu.closePopup());
+  await expect(addPanel).toHaveAttribute('aria-expanded', 'false');
+  await workhub.getByRole('button', { name: '收起任务工作栏', exact: true }).click();
+  await expect(page.locator('.maka-session-workbar[data-placement="right"]')).toBeHidden();
   const anchors = workhub.locator('.workhub-anchors');
   const draftBeforeOverlays = 'Draft survives main-window overlays and dragging.';
   await workhub.locator(COMPOSER_INPUT).fill(draftBeforeOverlays);
@@ -91,7 +118,13 @@ test('WorkHub uses its coordination model and shared attachment composer', async
   await expect.poll(() => anchors.evaluate((element) => element.scrollLeft)).toBeLessThan(5);
   const expandSidebar = page.getByRole('button', { name: '展开侧边栏', exact: true });
   if (await expandSidebar.isVisible()) await expandSidebar.click();
-  const nativeWorkHubVisible = () => mainWindow.evaluate((window) => window.contentView.children.some((child) => 'webContents' in child && (child as Electron.WebContentsView).webContents.getURL().includes('surface=workhub') && child.getVisible()));
+  const nativeWorkHubVisible = () => mainWindow.evaluate((window) => {
+    const visible = (view: Electron.View): boolean => view.getVisible() && (
+      ('webContents' in view && (view as Electron.WebContentsView).webContents.getURL().includes('surface=workhub')) ||
+      view.children.some(visible)
+    );
+    return visible(window.contentView);
+  });
   const actions = page.getByRole('button', { name: /Drag task 0.*任务操作$/ });
   await page.getByRole('button', { name: 'Drag task 0', exact: true }).hover();
   await actions.click();
@@ -191,13 +224,15 @@ test('WorkHub uses its coordination model and shared attachment composer', async
   await expect(workhub.getByRole('button', { name: /^(隐藏|Hide)$/ })).toHaveCount(0);
   await expect.poll(() => workhub.evaluate(() => innerHeight === Math.ceil(document.querySelector('.workHubComposerSurface')!.getBoundingClientRect().height))).toBe(true);
   await expect.poll(floatingBottom).toBe(anchoredBottom);
-  // Opening context details must expand the native compact window as well as the renderer.
+  // The floating renderer requests Main's Workbar across presentation IPC;
+  // it must neither reparent the conversation nor resize the compact window.
   await workhub.getByRole('button', { name: /打开用量追踪|Open usage trace/ }).click();
-  await expect(workhub.getByRole('button', { name: /收起任务工作栏|Collapse task workbar/ })).toBeVisible();
-  await expect.poll(() => workhub.evaluate(() => innerHeight)).toBe(expandedHeight);
-  await workhub.getByRole('button', { name: /收起任务工作栏|Collapse task workbar/ }).click();
-  await workhub.getByRole('button', { name: /收起对话|Collapse conversation/ }).click();
+  await expect(page.getByRole('button', { name: /收起任务工作栏|Collapse task workbar/ })).toBeVisible();
+  await expect(workhub.locator('.maka-session-workbar')).toHaveCount(0);
   await expect.poll(() => workhub.evaluate(() => innerHeight === Math.ceil(document.querySelector('.workHubComposerSurface')!.getBoundingClientRect().height))).toBe(true);
+  await expect(editor).toHaveText('Keep this draft while folding the conversation.');
+  await workhub.getByRole('button', { name: /打开用量追踪|Open usage trace/ }).click();
+  await expect(page.getByRole('button', { name: /展开任务工作栏|Expand task workbar/ })).toBeVisible();
   const thinking = workhub.getByRole('button', { name: /思考级别|Thinking level/ });
   await expect(thinking).toBeEnabled();
   await thinking.click();
@@ -383,7 +418,13 @@ test('WorkHub keeps the submitted prompt visible while its agent is still runnin
   await workhub.getByRole('button', { name: /^(Return to Maka|收回 Maka)$/ }).click();
   const dockBounds = await page.locator('.workHubDock').boundingBox();
   await app.evaluate(({ webContents }) => {
-    webContents.getAllWebContents().find((contents) => contents.getURL().includes('surface=workhub'))!.forcefullyCrashRenderer();
+    const contents = webContents.getAllWebContents().find((contents) => contents.getURL().includes('surface=workhub'))!;
+    const rendererPid = contents.getOSProcessId();
+    if (rendererPid <= 0 || webContents.getAllWebContents().some((other) => other !== contents && other.getOSProcessId() === rendererPid)) {
+      throw new Error('Crash fixture requires an isolated WorkHub renderer process');
+    }
+    // Kill the process so this verifies recovery from an actual renderer exit.
+    process.kill(rendererPid, 'SIGKILL');
   });
   await expect.poll(() => workhub.isClosed()).toBe(true);
   await expect.poll(() => page.evaluate(() => window.maka.workHubPresentation.getSnapshot())).toMatchObject({ placement: 'docked', rendererCrashed: true });
@@ -455,7 +496,13 @@ test('WorkHub keeps the submitted prompt visible while its agent is still runnin
   await expect(workhub.locator('[data-transient-message-id]')).toHaveCount(0);
   await expect(prompt).toHaveCount(2);
   await app.evaluate(({ webContents }) => {
-    webContents.getAllWebContents().find((contents) => contents.getURL().includes('surface=workhub'))!.forcefullyCrashRenderer();
+    const contents = webContents.getAllWebContents().find((contents) => contents.getURL().includes('surface=workhub'))!;
+    const rendererPid = contents.getOSProcessId();
+    if (rendererPid <= 0 || webContents.getAllWebContents().some((other) => other !== contents && other.getOSProcessId() === rendererPid)) {
+      throw new Error('Crash fixture requires an isolated WorkHub renderer process');
+    }
+    // Kill the process so this verifies recovery from an actual renderer exit.
+    process.kill(rendererPid, 'SIGKILL');
   });
   await expect.poll(() => workhub.isClosed()).toBe(true);
   await page.evaluate(() => window.maka.workHubPresentation.detach());
