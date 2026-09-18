@@ -186,6 +186,7 @@ import {
   type RuntimeHostDomainModule,
 } from './host-composition.js';
 import { HostInteractionCoordinator } from './interaction-coordinator.js';
+import { HostWorkHubTargetExecutionAuthority } from './workhub-target-execution-authority.js';
 import { HostInteractiveTurnCoordinator } from './interactive-turn-coordinator.js';
 import { SessionTurnAccessRequestCoordinator } from './session-turn-access-request-coordinator.js';
 import { ensureBootstrapRuntimePolicy } from './bootstrap-runtime-policy.js';
@@ -2058,9 +2059,36 @@ export async function createExecutionRuntimeHostComposition(
         ? { sessionAccessAuthority: context.sessionAccessAuthority }
         : {}),
     });
+    const workHubTargetExecution = new HostWorkHubTargetExecutionAuthority({
+      readSession: (sessionId) => stores.sessionStore.readHeaderRecordSnapshot(sessionId),
+      runtimePolicy: {
+        resolveExecutionConnection: (locator) =>
+          runtimePolicyStores.operations.resolveExecutionConnection(locator),
+        connectionCatalog: runtimePolicyStores.connectionCatalog,
+      },
+      requestForm: (input) => interactions.requestForm(input),
+      updateModel: async (input, operationContext) => {
+        const outcome = await sessionCatalog.handlers['session.configuration.update'](
+          {
+            sessionId: input.sessionId,
+            expectedRevision: input.expectedRevision,
+            patch: { modelTarget: input.modelTarget },
+          },
+          operationContext,
+        );
+        if (!outcome.ok) {
+          throw new WorkHubActionEffectFailure(
+            outcome.error.code === 'invalid_request' ? 'operation_conflict' : outcome.error.code,
+            outcome.error.message,
+          );
+        }
+        return outcome.result.kind === 'committed' ? 'committed' : 'revision_conflict';
+      },
+    });
     workHubCoordination = new HostWorkHubCoordinationCoordinator({
       routingModel: dependencies.workHubRoutingModel,
       requestForm: (input) => interactions.requestForm(input),
+      targetExecution: workHubTargetExecution,
       configureModel: (input) => sessionCatalog.configureWorkHubModel(input),
       transitionConfiguration: (input) =>
         requireSessionManager(manager).transitionSessionConfiguration(
@@ -2104,7 +2132,14 @@ export async function createExecutionRuntimeHostComposition(
         // Resolve and resume only the execution lineage owned by this
         // delegation. A Session-wide latest-failure query could otherwise
         // continue unrelated work started directly in the same Session.
-        resumeDelegation: async (assignment, context, actionId, validateFreshTarget) => {
+        resumeDelegation: async (
+          assignment,
+          context,
+          actionId,
+          validateFreshTarget,
+          prepareTargetExecution,
+          assertTargetExecutionReady,
+        ) => {
           const targetTurnId = workHubResumedTurnId(actionId);
           const admitted = await stores.agentRunStore.readRootTurnAdmission(
             assignment.targetSessionId,
@@ -2119,6 +2154,11 @@ export async function createExecutionRuntimeHostComposition(
             }
             return { outcome: 'resume_started' as const, targetTurnId };
           }
+          await validateFreshTarget();
+          await prepareTargetExecution?.();
+          // A model-repair form can remain open while another action changes
+          // the delegated target. Recheck freshness before reading its
+          // terminal lineage so the resumed action never uses a stale target.
           await validateFreshTarget();
           const disposition = await messages.readMessageExecutionDisposition(
             assignment.targetSessionId,
@@ -2180,7 +2220,7 @@ export async function createExecutionRuntimeHostComposition(
               'WorkHub resume source lineage changed during planning',
             );
           }
-          const started = await coordinator.handlers['turn.resume.start'](
+          const started = await coordinator.startTurnResumeWithValidation(
             {
               sessionId: assignment.targetSessionId,
               turnId: targetTurnId,
@@ -2188,6 +2228,7 @@ export async function createExecutionRuntimeHostComposition(
               sourceRuntimeEventHighWater: plan.result.sourceRuntimeEventHighWater,
             },
             context,
+            assertTargetExecutionReady,
           );
           if (!started.ok) {
             throw new WorkHubActionEffectFailure(started.error.code, started.error.message);
