@@ -3737,7 +3737,7 @@ const makaBridge = {
       return invokeSessionRuntimeHost('app:sessionProjectInfo', sessionId);
     },
     openPath(
-      key: 'workspace' | 'skills' | 'memory' | 'project',
+      key: 'workspace' | 'memory' | 'project',
       sessionId?: string,
       host?: DesktopRuntimeHostRef,
     ): Promise<
@@ -3928,6 +3928,14 @@ const makaBridge = {
         | { ok: false; reason: 'cancelled' | 'invalid_skill' | 'already_exists' | 'blocked_path' | 'write_failed' }
       > {
         return invokeSelectedRuntimeHost(host, 'skills:sources:importLocalFile');
+      },
+    },
+    locations: {
+      list(host?: DesktopRuntimeHostRef) {
+        return invokeSelectedRuntimeHost(host, 'skills:locations:list');
+      },
+      open(ref: import('@maka/ui').SkillLocationRef, options: import('../shared/skill-locations.js').OpenSkillLocationOptions, host?: DesktopRuntimeHostRef) {
+        return invokeSelectedRuntimeHost(host, 'skills:locations:open', ref, options);
       },
     },
     installManaged(sourceId: string, host?: DesktopRuntimeHostRef): Promise<
