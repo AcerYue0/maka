@@ -17,4 +17,16 @@
  * under the License.
  */
 
-export { sessionMatchesRail } from '../../../application/contracts/session-catalog/session-rail-visibility.js';
+/** Value equality for sets of session ids — rebuilt sets stay off the token path. */
+export function sessionIdSetsEqual(
+  a: ReadonlySet<string> | undefined,
+  b: ReadonlySet<string> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.size !== b.size) return false;
+  for (const id of a) {
+    if (!b.has(id)) return false;
+  }
+  return true;
+}
