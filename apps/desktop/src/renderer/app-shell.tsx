@@ -743,9 +743,9 @@ function AppShellContent({
     newChatModelLabel,
     newChatThinkingLevels,
     newChatThinkingLevel,
+    pendingNewChatThinkingLevel,
     composerSupportsVision,
     setPendingNewChatModel,
-    pendingNewChatThinkingLevel,
     setPendingNewChatThinkingLevel,
     sessionHealthNotice,
   } = useShellChatModel({
@@ -762,7 +762,6 @@ function AppShellContent({
     sessionHealthSession: activeSession,
     persistedComposerDefaults,
     usePersistedComposerDefaults: modelSettingsOwnsComposerHost,
-    defaultThinkingLevel: taskEntry.selectors.selectedHost?.chatDefaults.thinkingLevel,
     connectionSnapshotReady: activeId
       ? sessionHostConnections.projection.status === 'ready'
       : true,
@@ -1426,7 +1425,7 @@ function AppShellContent({
     showModelSetupToast,
     toastApi,
     newChatModel: newChatModel ?? null,
-    pendingNewChatThinkingLevel: newChatThinkingLevel ?? null,
+    pendingNewChatThinkingLevel,
     newChatPermissionChoice: newTaskPermissionChoice,
     clearNewChatPermissionChoice: clearNewTaskPermissionChoice,
     newChatCollaborationMode: newChatPlanModeActive ? 'plan' : 'agent',
