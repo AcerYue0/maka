@@ -105,7 +105,7 @@ export type ProviderModelDiscovery =
       query?: Readonly<Record<string, string>>;
       responseShape?: 'array-or-data';
       modelProtocols?: 'commandcode';
-      filter?: 'language-models' | 'muse-spark' | 'tool-capable';
+      filter?: 'language-models' | 'tool-capable';
     }
   | {
       kind: 'fireworks';
@@ -881,7 +881,7 @@ const providerRegistry = {
       name: 'provider',
       responses: { adapter: 'openai', reasoningReplay: 'encrypted-content' },
     },
-    modelDiscovery: { kind: 'protocol', filter: 'muse-spark' },
+    modelDiscovery: { kind: 'protocol' },
     category: 'overseas',
     catalogGroup: 'api',
     signupUrl: 'https://dev.meta.ai/',

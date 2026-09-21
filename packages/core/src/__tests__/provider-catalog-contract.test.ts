@@ -75,7 +75,7 @@ describe('Meta Model API provider', () => {
       name: 'provider',
       responses: { adapter: 'openai', reasoningReplay: 'encrypted-content' },
     });
-    assert.deepEqual(meta.modelDiscovery, { kind: 'protocol', filter: 'muse-spark' });
+    assert.deepEqual(meta.modelDiscovery, { kind: 'protocol' });
     assert.equal(meta.signupUrl, 'https://dev.meta.ai/');
   });
 });
@@ -138,6 +138,11 @@ describe('provider catalog contract — structural invariants over CATALOG_PROVI
       },
       {
         providerType: 'openai',
+        via: 'runtimeAdapter',
+        contract: { adapter: 'openai', reasoningReplay: 'encrypted-content' },
+      },
+      {
+        providerType: 'meta',
         via: 'runtimeAdapter',
         contract: { adapter: 'openai', reasoningReplay: 'encrypted-content' },
       },

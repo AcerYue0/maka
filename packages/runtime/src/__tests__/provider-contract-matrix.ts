@@ -114,7 +114,7 @@ export interface ProviderContractDiscoveryPlan {
   path?: string;
   query?: Readonly<Record<string, string>>;
   responseShape?: 'array-or-data';
-  filter?: 'fallback-models' | 'language-models' | 'muse-spark' | 'tool-capable';
+  filter?: 'fallback-models' | 'language-models' | 'tool-capable';
 }
 
 /** Derived expectation for a generated `reasoning-replay` cell. */

@@ -312,7 +312,7 @@ describe('model discovery', () => {
     assert.equal(repeatedRequests, 2);
   });
 
-  test('Meta discovery keeps supported 1.3 chat models and excludes other model families', async () => {
+  test('Meta discovery preserves provider-listed models absent from the bundled fallback', async () => {
     const requests: Array<{ url: string; authorization: string | undefined }> = [];
     const server = await startJsonServer((request, response) => {
       requests.push({ url: request.url ?? '', authorization: request.headers.authorization });
@@ -326,9 +326,7 @@ describe('model discovery', () => {
             created: 1,
             owned_by: 'meta',
           },
-          { id: 'muse-spark-1.2', object: 'model', created: 1, owned_by: 'meta' },
-          { id: 'muse-image-1.0', object: 'model', created: 1, owned_by: 'meta' },
-          { id: 'muse-voice-transcribe-1.0', object: 'model', created: 1, owned_by: 'meta' },
+          { id: 'muse-spark-1.4', object: 'model', created: 1, owned_by: 'meta' },
         ],
       });
     });
@@ -346,16 +344,9 @@ describe('model discovery', () => {
     assert.ok(outcome.ok);
     const models = outcome.models;
     assert.deepEqual(models, [
-      {
-        id: 'muse-spark-1.3',
-        apiProtocol: 'openai-responses',
-        capabilities: { chat: true },
-      },
-      {
-        id: 'muse-spark-1.3-contributor',
-        apiProtocol: 'openai-responses',
-        capabilities: { chat: true },
-      },
+      { id: 'muse-spark-1.3' },
+      { id: 'muse-spark-1.3-contributor' },
+      { id: 'muse-spark-1.4' },
     ]);
     assert.deepEqual(
       buildModelCatalogEntries({
@@ -366,6 +357,7 @@ describe('model discovery', () => {
       [
         { id: 'muse-spark-1.3', canUseAsChatDefault: true },
         { id: 'muse-spark-1.3-contributor', canUseAsChatDefault: true },
+        { id: 'muse-spark-1.4', canUseAsChatDefault: true },
       ],
     );
   });
