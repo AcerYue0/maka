@@ -44,6 +44,9 @@ import type {
   UpdateAppSettingsResult,
   UsageRange,
   UsageStats,
+  UsageScreenQuery,
+  UsageScreenRequest,
+  UsageScreenResult,
   ThemePreference,
 } from '@maka/core/settings';
 import type { BotProvider } from '@maka/core/bot-chat-settings';
@@ -68,12 +71,12 @@ import type {
   TurnOrchestration,
   SessionListFilter,
   BranchFromTurnInput,
-  RegenerateTurnInput,
   ReviseBeforeTurnInput,
 } from '@maka/core/runtime-inputs';
 import type { PlanSessionState } from '@maka/core/plan';
 import type { SearchErrorReason, SearchRequest, SearchResult } from '@maka/core/search';
-import type { SessionChangedEvent, SessionSummary, TurnRecord } from '@maka/core/session';
+import type { SessionChangedEvent, SessionSummary, StoredMessage, TurnRecord } from '@maka/core/session';
+import type { SessionSnapshot } from '@maka/core/session-reference';
 import type { ThinkingLevel } from '@maka/core/model-thinking';
 import type { E2eFixtureState } from '@maka/core/e2e-fixture';
 import type {
@@ -113,6 +116,7 @@ import type { DeepResearchChangedEvent, DeepResearchClientProgress } from '@maka
 import type {
   DesktopTranscriptBatch,
   DesktopTranscriptHandle,
+  DesktopTranscriptOpenMode,
 } from './transcript-contract.js';
 import type { PetPackManifestV1 } from '@maka/core/pet';
 import type {
@@ -127,6 +131,7 @@ import type {
   OperationOutcome,
   OperationOutput,
 } from '@maka/runtime-host/protocol';
+import type { MakaClientPluginSnapshot } from '@maka/ui/client-plugin-runtime';
 import type {
   CollaborationAccessQueryResult,
   CollaborationGrantRevokeResult,
@@ -256,7 +261,8 @@ import type {
 } from '@maka/runtime/stream-graph-read-model';
 import type { BotStatus, WechatBridgeQrCodeResult } from '@maka/runtime/bots';
 import type { ShellRunPtyDataEvent, ShellRunPtySnapshot } from '@maka/runtime/shell-run-contract';
-import type { BundledSkillCatalogEntry, ManagedSkillSourceEntry, ManagedSkillUpdatePreview, SkillEntry } from '@maka/ui';
+import type { BundledSkillCatalogEntry, ManagedSkillSourceEntry, ManagedSkillUpdatePreview, SkillEntry, SkillLocationRef } from '@maka/ui';
+import type { OpenSkillLocationOptions, OpenSkillLocationResult, SkillLocationsSnapshot } from '../shared/skill-locations.js';
 import type { ConfigCategory } from '@maka/storage/config-transfer';
 import type { OnboardingMilestone, OnboardingMilestoneId, OnboardingState } from '@maka/core/onboarding';
 import type {
@@ -409,6 +415,35 @@ export type DesktopOAuthAuthorizationStartResult =
 export type DesktopOAuthAuthorizationResult =
   | { readonly ok: true; readonly connection: DesktopOAuthConnectionIdentity }
   | Exclude<SubscriptionActionResult, { readonly ok: true }>;
+
+/**
+ * Browser-assisted Command Code sign-in. Desktop-local, not Host-scoped: the
+ * Studio page posts the minted key to a loopback port beside the browser, and
+ * the key then travels through the ordinary `connections` path like a pasted
+ * one. Mirrored by `features/connection-settings/ports.ts` on the renderer side.
+ */
+export type DesktopCommandCodeLoginFailureReason =
+  | 'denied'
+  | 'timeout'
+  | 'cancelled'
+  | 'superseded'
+  | 'port_unavailable'
+  | 'browser_unavailable';
+export interface DesktopCommandCodeLoginStartInput {
+  readonly baseUrl?: string;
+}
+export type DesktopCommandCodeLoginStartResult =
+  | { readonly ok: true; readonly attemptId: string; readonly authUrl: string }
+  | {
+      readonly ok: false;
+      readonly reason: 'port_unavailable' | 'browser_unavailable' | 'superseded';
+    };
+export type DesktopCommandCodeLoginResult =
+  | {
+      readonly ok: true;
+      readonly credentials: { readonly apiKey: string; readonly userName: string; readonly keyName: string };
+    }
+  | { readonly ok: false; readonly reason: DesktopCommandCodeLoginFailureReason };
 
 export type DesktopNewTaskHostRef = DesktopRuntimeHostRef;
 
@@ -763,6 +798,22 @@ export interface DesktopSessionUsageSummary extends UsageSummaryV2 {
 }
 
 export interface MakaBridge {
+  clientPlugins: {
+    snapshot(): Promise<MakaClientPluginSnapshot>;
+    remoteCall(
+      input: OperationInput<'plugin.client.remote.call'>,
+    ): Promise<OperationOutput<'plugin.client.remote.call'>>;
+    remoteStreamOpen(
+      input: OperationInput<'plugin.client.remote.stream.open'>,
+    ): Promise<OperationOutput<'plugin.client.remote.stream.open'>>;
+    remoteStreamNext(
+      input: OperationInput<'plugin.client.remote.stream.next'>,
+    ): Promise<OperationOutput<'plugin.client.remote.stream.next'>>;
+    remoteStreamClose(
+      input: OperationInput<'plugin.client.remote.stream.close'>,
+    ): Promise<OperationOutput<'plugin.client.remote.stream.close'>>;
+  };
+
   sessionLocal: import('../shared/session-local-contract.js').DesktopSessionLocalBridge;
   workHubControl: import('../shared/workhub-control.js').WorkHubControlBridge;
   workHubPresentation: import('../shared/workhub-presentation.js').WorkHubPresentationBridge;
@@ -797,13 +848,7 @@ export interface MakaBridge {
     renameMount(mountId: string, name: string): Promise<void>;
     requestTurn(
       sessionId: string,
-      input:
-        | { readonly kind: 'start'; readonly turnId: string; readonly text: string }
-        | {
-            readonly kind: 'regenerate';
-            readonly turnId: string;
-            readonly sourceTurnId: string;
-          },
+      input: { readonly kind: 'start'; readonly turnId: string; readonly text: string },
     ): Promise<SessionTurnAccessRequest>;
     getTurnRequests(sessionId: string): Promise<CollaborationTurnRequestQueryResult>;
     /** Pending Owner decisions across every connected Owner Runtime Host. */
@@ -1072,11 +1117,12 @@ export interface MakaBridge {
     answer(coordinationSessionId: string, input: WorkHubAnswerInput): Promise<WorkHubAnswerResult>;
     configureModel(coordinationSessionId: string, input: OperationInput<'workhub.coordination.configureModel'>): Promise<OperationOutput<'workhub.coordination.configureModel'>>;
     /** Resolve the active Runtime Host's stable coordination conversation. */
-    resolveCoordinationSession(): Promise<string>;
+    resolveCoordinationSession(): Promise<string | { readonly kind: 'model_required' }>;
 
   };
   sessions: {
     list(filter?: SessionListFilter): Promise<DesktopSessionSummary[]>;
+    get(sessionId: string): Promise<DesktopSessionSummary | null>;
     listWithCoverage(): Promise<{
       sessions: DesktopSessionSummary[];
       completeHostIds: string[];
@@ -1224,13 +1270,18 @@ export interface MakaBridge {
       }) => void,
     ): () => void;
     listTurns(sessionId: string): Promise<TurnRecord[]>;
-    listTurnLandmarks(sessionId: string): Promise<OperationOutput<'session.turn_landmarks.query'>>;
+    /** Read a bounded, redacted tail from another same-Host Session. */
+    readSnapshot(sessionId: string, options?: { maxChars?: number }): Promise<SessionSnapshot>;
+    /** Sampled prompt-rail landmarks, or where the one Turn `turnId` sits. */
+    listTurnLandmarks(
+      sessionId: string,
+      turnId?: string | null,
+    ): Promise<OperationOutput<'session.turn_landmarks.query'>>;
     compact(sessionId: string): Promise<OperationOutput<'context.compact'>>;
     resumeLatest(sessionId: string): Promise<
       | { disposition: 'started'; runId: string; turnId: string }
       | { disposition: 'park'; rejectionReasons: string[]; diagnostics: unknown[] }
     >;
-    regenerateTurn(sessionId: string, input: RegenerateTurnInput): Promise<void>;
     branchFromTurn(
       sessionId: string,
       input: DesktopBranchFromTurnInput & { sideConversation: true },
@@ -1319,16 +1370,22 @@ export interface MakaBridge {
     abandonSessionCopy(sourceSessionId: string, copyId: string): Promise<void>;
   };
   transcripts: {
+    /** Every message of one Turn, read from the Host rather than from any open transcript. */
+    readTurn(sessionId: string, turnId: string): Promise<StoredMessage[]>;
+    /** Opens the whole transcript unless a consumer asks for the tail alone. */
     open(
       sessionId: string,
       handler: (batch: DesktopTranscriptBatch) => void,
       registerCancellation?: (cancel: () => void) => void,
+      mode?: DesktopTranscriptOpenMode,
+      /** The oldest sequence the reader already holds; the first answer reads back down to it. */
+      resumeFrom?: number,
     ): Promise<DesktopTranscriptHandle>;
   };
   externalSessions: {
     listSources(host?: DesktopRuntimeHostRef): Promise<{ adapterIds: string[] }>;
     list(
-      input: { adapterId: string; includeArchived?: boolean; cursor?: string },
+      input: { adapterId: string; includeArchived?: boolean; cursor?: string; text?: string },
       host?: DesktopRuntimeHostRef,
     ): Promise<{
       sessions: DesktopExternalSessionCatalogItem[];
@@ -1459,6 +1516,8 @@ export interface MakaBridge {
     test(connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity | string, opts?: { model?: string }, host?: DesktopRuntimeHostRef): Promise<ConnectionTestResult>;
     fetchModels(connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity, host?: DesktopRuntimeHostRef): Promise<Pick<ModelDiscoveryResult, 'models' | 'source'>>;
     hasSecret(connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity, host?: DesktopRuntimeHostRef): Promise<boolean>;
+    /** Read-only account usage for a connection, Host-fetched. */
+    usage(connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity, host?: DesktopRuntimeHostRef): Promise<import('@maka/runtime-host/protocol').ConnectionUsageReadResult>;
     getRequestHeaders(connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity, host?: DesktopRuntimeHostRef): Promise<import('@maka/core/llm-connections').SavedRequestHeaders>;
     setRequestHeaders(
       connection: import('../shared/desktop-connection-snapshot').DesktopConnectionIdentity,
@@ -1504,7 +1563,7 @@ export interface MakaBridge {
     subscribeExternalChanged(handler: () => void, host?: DesktopRuntimeHostRef): () => void;
     testNetworkProxy(input?: TestProxyInput, host?: DesktopRuntimeHostRef): Promise<SettingsTestResult>;
     testBotChannel(provider: BotProvider): Promise<SettingsTestResult>;
-    usageStats(range?: UsageRange, host?: DesktopRuntimeHostRef): Promise<UsageStats>;
+    usageStats(range?: UsageRange | Extract<UsageScreenRequest, {kind: 'activity'}>, host?: DesktopRuntimeHostRef, query?: UsageScreenQuery): Promise<UsageStats | UsageScreenResult>;
     bots: {
       listStatuses(): Promise<Record<BotProvider, BotStatus>>;
       restart(provider: BotProvider): Promise<BotStatus>;
@@ -1653,6 +1712,12 @@ export interface MakaBridge {
     refreshTokens(host: DesktopRuntimeHostRef | undefined, connectionId: string): Promise<SubscriptionActionResult>;
     logout(host: DesktopRuntimeHostRef | undefined, connectionId: string): Promise<SubscriptionActionResult>;
   };
+  /** Desktop-local browser sign-in for Command Code; see `DesktopCommandCodeLoginResult`. */
+  commandCodeLogin: {
+    start(input: DesktopCommandCodeLoginStartInput): Promise<DesktopCommandCodeLoginStartResult>;
+    complete(attemptId: string): Promise<DesktopCommandCodeLoginResult>;
+    cancel(attemptId: string): Promise<void>;
+  };
   githubCopilotSubscription: {
     connectExistingLogin(host?: DesktopRuntimeHostRef): Promise<SubscriptionActionResult>;
     getAuthUrl(
@@ -1747,6 +1812,7 @@ export interface MakaBridge {
      */
   };
   appWindow: {
+    popupMenu(input: import('../shared/native-menu.js').NativeMenuRequest): Promise<string | null>;
     setTitlebarControlsVisible(visible: boolean): Promise<void>;
     setThemeSource(themePref: ThemePreference): Promise<void>;
     // PR-WINDOW-TITLEBAR-0: re-sync the native Windows titleBarOverlay
@@ -1816,7 +1882,7 @@ export interface MakaBridge {
       projectGit: { isGitRepo: boolean; branch?: string };
     }>;
     openPath(
-      key: 'workspace' | 'skills' | 'memory' | 'project',
+      key: 'workspace' | 'memory' | 'project',
       sessionId?: string,
       host?: DesktopRuntimeHostRef,
     ): Promise<
@@ -1914,6 +1980,10 @@ export interface MakaBridge {
         | { ok: false; reason: 'cancelled' | 'invalid_skill' | 'already_exists' | 'blocked_path' | 'write_failed' }
       >;
     };
+    locations: {
+      list(host?: DesktopRuntimeHostRef): Promise<SkillLocationsSnapshot>;
+      open(ref: SkillLocationRef, options: OpenSkillLocationOptions, host?: DesktopRuntimeHostRef): Promise<OpenSkillLocationResult>;
+    };
     installManaged(sourceId: string, host?: DesktopRuntimeHostRef): Promise<
       | { ok: true; skill: SkillEntry }
       | { ok: false; reason: 'not_found' | 'already_exists' | 'blocked_path' | 'write_failed' }
@@ -1946,6 +2016,7 @@ export interface MakaBridge {
   browser: {
     setActiveSession(sessionId: string | null): void;
     setViewport(input: { sessionId: string; rect: BrowserViewRect | null }): void;
+  capturePage(sessionId: string): Promise<string | undefined>;
     navigate(sessionId: string, url: string): Promise<void>;
     back(sessionId: string): Promise<void>;
     forward(sessionId: string): Promise<void>;
